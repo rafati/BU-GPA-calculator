@@ -1,0 +1,1028 @@
+"use client";
+
+import { useSession, signIn, signOut } from "next-auth/react";
+import { useState, useEffect, useMemo } from "react"; // <-- CORRECTED single import line
+// Remove the duplicate line if it exists
+
+// Define the expected structure for a grade scale row
+interface GradeScaleRow {
+    Grade: string;
+    Point: number;
+    Note: string;
+    AffectsGPA: boolean;
+}
+
+// --- Define Interfaces for Student Data (Matches API Response) ---
+interface StudentRecord {
+    DegStudentNo: string;
+    Email: string;
+    DegCumActualCredits: number;
+    DegCumPoints: number; // Raw points
+    DegCumMajorCredits: number;
+    DegCumMajorPoints: number; // Raw points
+}
+
+interface RegistrationRecord {
+    DegStudentNo: string;
+    CatalogKey: string;
+    Credits: number;
+    RegGrade: string | null;
+    MajorCourse: string;
+    Rpeat: string;
+    PrevGrade: string | null;
+}
+
+interface StudentDataResponse {
+    student?: StudentRecord | null;
+    registrations: RegistrationRecord[];
+}
+// Add this interface near the other interfaces
+interface PlannerCourse {
+    id: string; // Unique ID for React key, can be CatalogKey + index or UUID
+    catalogKey: string;
+    credits: number;
+    selectedGrade: string | null; // Grade chosen in the planner
+    isMajor: boolean;
+    isRepeat: boolean;
+    previousGrade: string | null; // Grade selected if isRepeat is true
+    // Add flags for requirement handling (P-Repeat case)
+    originalCourseWasMajor?: boolean | null; // Needed only if current grade is P and isRepeat is true
+  }
+// --- End Interfaces ---
+
+export default function Home() {
+    const { data: session, status } = useSession();
+
+    // --- State for Gradescale ---
+    const [gradeScale, setGradeScale] = useState<GradeScaleRow[]>([]);
+    const [gradeScaleStatus, setGradeScaleStatus] = useState< "idle" | "loading" | "success" | "error" >("idle");
+    const [gradeScaleError, setGradeScaleError] = useState<string | null>(null);
+    // --- End State for Gradescale ---
+
+    // --- State for Student Data ---
+    const [studentData, setStudentData] = useState<StudentDataResponse | null>(null);
+    const [studentDataStatus, setStudentDataStatus] = useState< "idle" | "loading" | "success" | "error" >("idle");
+    const [studentDataError, setStudentDataError] = useState<string | null>(null);
+
+    
+    // --- End State for Student Data ---
+    
+      // **** DECLARE plannerCourses STATE HERE ****
+      const [plannerCourses, setPlannerCourses] = useState<PlannerCourse[]>([]);
+      // --- End State Declarations ---
+
+  
+      // --- State for Target GPA ---
+      const [targetOverallGPAInput, setTargetOverallGPAInput] = useState<string>('2.0'); // Default to 2.0
+    const [targetMajorGPAInput, setTargetMajorGPAInput] = useState<string>('2.0');   // Default to 2.0
+      const [requiredSemesterGPA, setRequiredSemesterGPA] = useState<{ overall: string | number, major: string | number }>({ overall: 'N/A', major: 'N/A' });
+      const [targetCalcStatus, setTargetCalcStatus] = useState<'idle' | 'calculated' | 'error' | 'impossible'>('idle');
+      // --- End State for Target GPA ---
+
+
+
+           // --- Effect for fetching data AND populating planner ---
+    useEffect(() => {
+        // Fetch Gradescale if authenticated and not already loading/fetched
+        if (status === "authenticated" && gradeScaleStatus === "idle") {
+            setGradeScaleStatus("loading");
+            setGradeScaleError(null);
+            const fetchGradeScale = async () => {
+                try {
+                    const res = await fetch('/api/gradescale');
+                    if (!res.ok) { /* ... error handling ... */ }
+                    const data: GradeScaleRow[] = await res.json();
+                    setGradeScale(data); // Update state
+                    setGradeScaleStatus("success");
+                } catch (error: any) { /* ... error handling ... */ }
+            };
+            fetchGradeScale();
+        }
+
+        // Fetch Student Data if authenticated and not already loading/fetched
+        if (status === "authenticated" && studentDataStatus === "idle") {
+            setStudentDataStatus("loading");
+            setStudentDataError(null);
+            const fetchStudentData = async () => {
+                try {
+                    const res = await fetch('/api/studentdata');
+                    if (!res.ok) { /* ... error handling ... */ }
+                    const data: StudentDataResponse = await res.json();
+                    setStudentData(data); // Update state
+                    setStudentDataStatus("success");
+                } catch (error: any) { /* ... error handling ... */ }
+            };
+            fetchStudentData();
+        }
+
+        // Reset state if user logs out
+        else if (status === "unauthenticated") {
+            // Reset ALL relevant states
+            setGradeScale([]);
+            setGradeScaleStatus("idle");
+            setGradeScaleError(null);
+            setStudentData(null);
+            setStudentDataStatus("idle");
+            setStudentDataError(null);
+            setPlannerCourses([]); // Reset planner
+        }
+
+    // --- Separate Effect for Populating Planner (Runs only when necessary dependencies change) ---
+    // This effect depends ONLY on the data needed for population.
+    // It assumes the fetches above will eventually set studentData and gradeScale.
+    }, [status]); // Primary effect depends only on auth status for triggering fetches/resets
+
+
+    // --- NEW Effect specifically for populating the planner ---
+     useEffect(() => {
+        // Populate ONLY IF:
+        // 1. Both data fetches succeeded
+        // 2. We actually have student registration data AND gradescale data
+        // 3. The planner hasn't been populated yet (plannerCourses is empty)
+        if (studentDataStatus === "success" && studentData &&
+            gradeScaleStatus === "success" && gradeScale.length > 0 &&
+            plannerCourses.length === 0) // Crucial check to run only once per data load
+        {
+            console.log("Populating planner courses...");
+
+            const initialPlannerCourses = studentData.registrations.map((reg, index): PlannerCourse => {
+                 // ... (same mapping logic as before to create PlannerCourse object) ...
+                 const isRepeatValue = reg.Rpeat === 'Yes';
+                 const isValidRegGrade = gradeScale.some(gs => gs.Grade === reg.RegGrade);
+                 const initialSelectedGrade = isValidRegGrade ? reg.RegGrade : null;
+                 const isValidPrevGrade = gradeScale.some(gs => gs.Grade === reg.PrevGrade);
+                 const initialPreviousGrade = isRepeatValue && isValidPrevGrade ? reg.PrevGrade : null;
+
+                 console.log(`Processing reg: ${reg.CatalogKey}, Repeat Sheet Value: ${reg.Rpeat}, Calculated isRepeat: ${isRepeatValue}, Calculated PrevGrade: ${initialPreviousGrade}`);
+
+                 return {
+                     id: `${reg.CatalogKey}-${index}-${Date.now()}`,
+                     catalogKey: reg.CatalogKey,
+                     credits: reg.Credits,
+                     selectedGrade: initialSelectedGrade,
+                     isMajor: reg.MajorCourse === 'Yes',
+                     isRepeat: isRepeatValue,
+                     previousGrade: initialPreviousGrade,
+                     originalCourseWasMajor: null,
+                 };
+            });
+            setPlannerCourses(initialPlannerCourses); // Update state ONCE
+            console.log("Planner courses initialized:", initialPlannerCourses);
+        }
+     }, [studentDataStatus, studentData, gradeScaleStatus, gradeScale, plannerCourses]); // Dependencies needed for the populating logic itself
+     // --- End NEW Effect ---
+
+
+    // --- Helper Function to Calculate GPA ---
+    // Note: Apply points/10 rule here
+    const calculateGPA = (points: number, credits: number): string => {
+        if (credits <= 0) return "N/A";
+        const adjustedPoints = points / 10; // Apply division rule
+        const gpa = adjustedPoints / credits;
+        return gpa.toFixed(3); // Display to 3 decimal places
+    };
+    // --- End Helper ---
+       // --- Planner Input Handler ---
+       const handlePlannerChange = (id: string, field: keyof PlannerCourse, value: any) => {
+        console.log(`handlePlannerChange: id=${id}, field=${field}, value=${value}`); // Log input
+
+        setPlannerCourses(prevCourses => {
+            // Create a new array - DO NOT MUTATE PREVIOUS STATE
+            const updatedCourses = prevCourses.map(course => {
+                // Find the course to update
+                if (course.id === id) {
+                    // Create a new object for the changed course
+                    // Use a temporary variable to hold the intermediate state
+                    let updatedCourse = { ...course, [field]: value };
+
+                    // --- Add Logic for Dependent Fields ---
+
+                    // 1. If "Repeat?" is unchecked, clear "Previous Grade" and P-Repeat flags
+                    if (field === 'isRepeat' && value === false) {
+                        console.log(`Clearing previousGrade for course ${id} because isRepeat is false`); // Add log
+                        updatedCourse.previousGrade = null;
+                        updatedCourse.originalCourseWasMajor = null; // Clear P-repeat specific field too
+                    }
+
+                    // 2. If the current grade is changed *away* from 'P' while repeat is true, clear P-Repeat flag
+                    // Ensure we check the potentially *updated* isRepeat status
+                    if (field === 'selectedGrade' && updatedCourse.isRepeat && value !== 'P') {
+                        console.log(`Clearing originalCourseWasMajor for course ${id} because grade changed from P`); // Add log
+                        updatedCourse.originalCourseWasMajor = null;
+                    }
+
+                     // 3. If "Previous Grade" selection is cleared (user selects the placeholder "-- Select Prev --")
+                    if (field === 'previousGrade' && value === '') {
+                        console.log(`Setting previousGrade to null for course ${id} due to empty selection`); // Add log
+                        updatedCourse.previousGrade = null; // Store null explicitly
+                    }
+                    // Check also necessary in onChange: `e.target.value || null`
+
+                     // 4. If "Selected Grade" selection is cleared (user selects the placeholder "-- Select --")
+                     if (field === 'selectedGrade' && value === '') {
+                          console.log(`Setting selectedGrade to null for course ${id} due to empty selection`); // Add log
+                          updatedCourse.selectedGrade = null; // Store null explicitly
+                     }
+                    // Check also necessary in onChange: `e.target.value || null`
+
+
+                    // --- End Dependent Field Logic ---
+                     console.log("Updated course object:", updatedCourse); // Log the final state of the updated course
+                    return updatedCourse; // Return the modified course object
+                }
+                // If it's not the course we're looking for, return it unchanged
+                return course;
+            });
+
+    // ... after handlePlannerChange ...
+
+
+
+            // Return the new array with the updated course (or the original array if no match - though id should match)
+            return updatedCourses;
+        });
+    };
+    // --- End Planner Input Handler ---
+
+    // --- Add Course Handler ---
+    const handleAddCourse = () => {
+        setPlannerCourses(prevCourses => {
+            const newCourse: PlannerCourse = {
+                // Generate a truly unique ID (e.g., using a library or timestamp+random)
+                id: `new-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                catalogKey: '', // Start blank, maybe make this editable later
+                credits: 3,     // Default credits
+                selectedGrade: null,
+                isMajor: false,
+                isRepeat: false,
+                previousGrade: null,
+                originalCourseWasMajor: null,
+            };
+            // Return a new array with the new course appended
+            return [...prevCourses, newCourse];
+        });
+    };
+    // --- End Add Course Handler ---
+
+
+    // --- Remove Course Handler ---
+    const handleRemoveCourse = (idToRemove: string) => {
+        setPlannerCourses(prevCourses => {
+            // Filter out the course with the matching ID
+            const updatedCourses = prevCourses.filter(course => course.id !== idToRemove);
+            // Return the new filtered array
+            return updatedCourses;
+        });
+    };
+
+    // ... after handleRemoveCourse ...
+
+    // --- Reset Planner Handler ---
+    // Stores the initially loaded planner state to revert back to
+    const [initialPlannerState, setInitialPlannerState] = useState<PlannerCourse[] | null>(null);
+
+    const handleResetPlanner = () => {
+        if (initialPlannerState) {
+            console.log("Resetting planner to initial state...");
+            setPlannerCourses(initialPlannerState); // Revert to the saved initial state
+        } else {
+            // Fallback: If initial state wasn't saved somehow, re-run the population logic
+            // (This might happen if reset is clicked before data fully loads)
+             console.log("Initial state not found, attempting re-population logic...");
+             // Re-populate logic (copied from useEffect) - Requires studentData and gradeScale
+             if (studentDataStatus === "success" && studentData && gradeScaleStatus === "success" && gradeScale.length > 0) {
+                  const repopulatedCourses = studentData.registrations.map((reg, index): PlannerCourse => {
+                     // ... (same mapping logic as in useEffect) ...
+                      const isRepeatValue = reg.Rpeat === 'Yes';
+                      const isValidRegGrade = gradeScale.some(gs => gs.Grade === reg.RegGrade);
+                      const initialSelectedGrade = isValidRegGrade ? reg.RegGrade : null;
+                      const isValidPrevGrade = gradeScale.some(gs => gs.Grade === reg.PrevGrade);
+                      const initialPreviousGrade = isRepeatValue && isValidPrevGrade ? reg.PrevGrade : null;
+                      return {
+                          id: `${reg.CatalogKey}-${index}-${Date.now()}`, // Generate new IDs on reset/repopulate
+                          catalogKey: reg.CatalogKey,
+                          credits: reg.Credits,
+                          selectedGrade: initialSelectedGrade,
+                          isMajor: reg.MajorCourse === 'Yes',
+                          isRepeat: isRepeatValue,
+                          previousGrade: initialPreviousGrade,
+                          originalCourseWasMajor: null,
+                      };
+                  });
+                  setPlannerCourses(repopulatedCourses);
+             } else {
+                 setPlannerCourses([]); // Otherwise, reset to empty
+             }
+        }
+        // Optionally also clear Target GPA inputs here if they exist
+        // setTargetOverallGPA('');
+        // setTargetMajorGPA('');
+    };
+    // --- End Reset Planner Handler ---
+
+
+     // --- Effect specifically for populating the planner AND SAVING INITIAL STATE ---
+     useEffect(() => {
+        if (studentDataStatus === "success" && studentData &&
+            gradeScaleStatus === "success" && gradeScale.length > 0 &&
+            // Check if planner is empty OR if initial state hasn't been set yet
+            (plannerCourses.length === 0 || initialPlannerState === null) &&
+            studentData.registrations // Ensure registrations exist before mapping
+           )
+        {
+            console.log("Populating planner courses and saving initial state...");
+
+            const initialPlannerCourses = studentData.registrations.map((reg, index): PlannerCourse => {
+                // ... (same mapping logic as before) ...
+                const isRepeatValue = reg.Rpeat === 'Yes';
+                const isValidRegGrade = gradeScale.some(gs => gs.Grade === reg.RegGrade);
+                const initialSelectedGrade = isValidRegGrade ? reg.RegGrade : null;
+                const isValidPrevGrade = gradeScale.some(gs => gs.Grade === reg.PrevGrade);
+                const initialPreviousGrade = isRepeatValue && isValidPrevGrade ? reg.PrevGrade : null;
+                 return {
+                     id: `${reg.CatalogKey}-${index}-${Date.now()}`,
+                     catalogKey: reg.CatalogKey,
+                     credits: reg.Credits,
+                     selectedGrade: initialSelectedGrade,
+                     isMajor: reg.MajorCourse === 'Yes',
+                     isRepeat: isRepeatValue,
+                     previousGrade: initialPreviousGrade,
+                     originalCourseWasMajor: null,
+                 };
+            });
+            setPlannerCourses(initialPlannerCourses); // Update current planner state
+            setInitialPlannerState(initialPlannerCourses); // *** SAVE the initial state ***
+            console.log("Planner courses initialized and initial state saved:", initialPlannerCourses);
+        }
+     }, [studentDataStatus, studentData, gradeScaleStatus, gradeScale, plannerCourses, initialPlannerState]); // Added initialPlannerState dependency
+     // --- End Effect ---
+
+
+     const semesterGPAInfo = useMemo(() => {
+        // Ensure gradescale is loaded before calculating
+        if (!gradeScale || gradeScale.length === 0) {
+            return { overallGPA: 'N/A', majorGPA: 'N/A', overallCredits: 0, majorCredits: 0, status: 'loading' };
+        }
+
+        let overallPoints = 0;
+        let overallCredits = 0; // GPA Denominator Credits
+        let majorPoints = 0;
+        let majorCredits = 0; // GPA Denominator Credits (Major)
+
+        plannerCourses.forEach(course => {
+            // Find the grade object from the scale
+            const gradeInfo = gradeScale.find(gs => gs.Grade === course.selectedGrade);
+
+            // Include in calculation ONLY if a valid grade is selected AND it affects GPA
+            if (gradeInfo && gradeInfo.AffectsGPA) {
+                const coursePoints = gradeInfo.Point * course.credits;
+
+                overallPoints += coursePoints;
+                overallCredits += course.credits;
+
+                if (course.isMajor) {
+                    majorPoints += coursePoints;
+                    majorCredits += course.credits;
+                }
+            }
+            // Note: Repeat status does NOT affect the SEMESTER calculation directly, only the projected CUMULATIVE
+        });
+
+        const overallGPA = overallCredits > 0 ? (overallPoints / overallCredits).toFixed(3) : 'N/A';
+        const majorGPA = majorCredits > 0 ? (majorPoints / majorCredits).toFixed(3) : 'N/A';
+
+        return { overallGPA, majorGPA, overallCredits, majorCredits, status: 'calculated' };
+
+    }, [plannerCourses, gradeScale]); // Recalculate when planner or gradescale changes
+    // --- End Semester Planner GPA Calculation ---
+
+        // ... after semesterGPAInfo useMemo block ...
+
+    // --- Calculate Projected Cumulative GPA using useMemo ---
+    const projectedGPAInfo = useMemo(() => {
+        // Need base student data, planner courses, and gradescale to calculate
+        if (studentDataStatus !== 'success' || !studentData || gradeScaleStatus !== 'success' || gradeScale.length === 0) {
+            return { overallGPA: 'N/A', majorGPA: 'N/A', status: 'waiting' };
+        }
+
+        // --- Base values (handle student not found case) ---
+        const baseOverallPts = studentData.student ? (studentData.student.DegCumPoints / 10) : 0;
+        const baseOverallCreds = studentData.student ? studentData.student.DegCumActualCredits : 0;
+        const baseMajorPts = studentData.student ? (studentData.student.DegCumMajorPoints / 10) : 0;
+        const baseMajorCreds = studentData.student ? studentData.student.DegCumMajorCredits : 0;
+
+        // --- Calculate Net Changes & Removals from Planner (FR5 Logic) ---
+        let netOverallPointChange = 0;
+        let netOverallCreditChange = 0;
+        let netMajorPointChange = 0;
+        let netMajorCreditChange = 0;
+        let pointsToRemove = 0;
+        let creditsToRemove = 0;
+        let majorPointsToRemove = 0;
+        let majorCreditsToRemove = 0;
+
+        plannerCourses.forEach(course => {
+            const gradeInfo = gradeScale.find(gs => gs.Grade === course.selectedGrade);
+            const prevGradeInfo = gradeScale.find(gs => gs.Grade === course.previousGrade); // Needed for repeats
+
+            // Only process if a valid current grade is selected
+            if (gradeInfo) {
+                 // Non-Repeat Courses or Repeats where new grade is Non-GPA (like W, E, IP - except P)
+                 if (!course.isRepeat || !gradeInfo.AffectsGPA && course.selectedGrade !== 'P') {
+                      if (gradeInfo.AffectsGPA) { // First attempt affecting GPA
+                         netOverallPointChange += gradeInfo.Point * course.credits;
+                         netOverallCreditChange += course.credits;
+                         if (course.isMajor) {
+                             netMajorPointChange += gradeInfo.Point * course.credits;
+                             netMajorCreditChange += course.credits;
+                         }
+                      }
+                      // If it's a non-GPA grade (W, E, IP) on a first attempt OR repeat, net change is 0 (already handled by AffectsGPA check)
+                 }
+                 // Handle Repeats (where new grade affects GPA OR is P)
+                 else if (course.isRepeat) {
+                      // P-Repeat Special Case (Need valid previous grade info)
+                      if (course.selectedGrade === 'P' && prevGradeInfo) {
+                          // Ensure previous grade actually affected GPA
+                          if (prevGradeInfo.AffectsGPA) {
+                              pointsToRemove += prevGradeInfo.Point * course.credits; // Use current credits per v17
+                              creditsToRemove += course.credits; // Use current credits per v17
+                              if (course.originalCourseWasMajor) { // Use the flag set by user
+                                  majorPointsToRemove += prevGradeInfo.Point * course.credits;
+                                  majorCreditsToRemove += course.credits;
+                              }
+                          }
+                          // The P grade itself adds 0 net change
+                      }
+                      // Non-P Repeat where new grade AffectsGPA (Need valid previous grade info)
+                      else if (gradeInfo.AffectsGPA && prevGradeInfo) {
+                          // Only adjust if previous grade also affected GPA
+                          const oldPoints = prevGradeInfo.AffectsGPA ? prevGradeInfo.Point : 0; // Treat prev non-GPA as 0 points for diff calc
+                          const pointDifference = (gradeInfo.Point - oldPoints) * course.credits;
+
+                          netOverallPointChange += pointDifference;
+                          // netOverallCreditChange += 0; // Credits don't change per v13
+
+                          // Apply major changes only if the *new* attempt counts towards major
+                          if (course.isMajor) {
+                             netMajorPointChange += pointDifference;
+                             // netMajorCreditChange += 0;
+                          }
+                      }
+                      // If prevGradeInfo is missing or doesn't affect GPA, treat it as a first attempt effectively
+                      else if (gradeInfo.AffectsGPA && !prevGradeInfo?.AffectsGPA) {
+                           netOverallPointChange += gradeInfo.Point * course.credits;
+                           netOverallCreditChange += course.credits; // Add credits as it replaces a non-GPA attempt effectively
+                            if (course.isMajor) {
+                                netMajorPointChange += gradeInfo.Point * course.credits;
+                                netMajorCreditChange += course.credits;
+                            }
+                      }
+                 } // End else if (course.isRepeat)
+            } // End if(gradeInfo)
+        }); // End forEach
+
+
+        // --- Calculate Final Projected GPAs ---
+        const finalOverallPts = baseOverallPts + netOverallPointChange - pointsToRemove;
+        const finalOverallCreds = baseOverallCreds + netOverallCreditChange - creditsToRemove;
+        const finalMajorPts = baseMajorPts + netMajorPointChange - majorPointsToRemove;
+        const finalMajorCreds = baseMajorCreds + netMajorCreditChange - majorCreditsToRemove;
+
+        const projectedOverallGPA = finalOverallCreds > 0 ? (finalOverallPts / finalOverallCreds).toFixed(3) : 'N/A';
+        const projectedMajorGPA = finalMajorCreds > 0 ? (finalMajorPts / finalMajorCreds).toFixed(3) : 'N/A';
+
+
+        return {
+            overallGPA: projectedOverallGPA,
+            majorGPA: projectedMajorGPA,
+            finalOverallCredits: finalOverallCreds, // For display/debugging
+            finalMajorCredits: finalMajorCreds,   // For display/debugging
+            status: 'calculated'
+        };
+
+    }, [studentDataStatus, studentData, gradeScaleStatus, gradeScale, plannerCourses]); // Dependencies
+    // --- End Projected Cumulative GPA Calculation ---
+
+
+    // ... after projectedGPAInfo useMemo block ...
+
+              // ... after projectedGPAInfo useMemo block ...
+
+
+          // --- Calculate Required Semester Info using useMemo (v34 - Final Logic Based on Use Cases) ---
+          const requiredSemesterInfo = useMemo(() => {
+            // Validate Target Inputs first
+            const targetOverall = parseFloat(targetOverallGPAInput);
+            const targetMajor = parseFloat(targetMajorGPAInput);
+            const hasOverallTarget = !isNaN(targetOverall) && targetOverall >= 0;
+            const hasMajorTarget = !isNaN(targetMajor) && targetMajor >= 0;
+
+            // Check if data is ready
+            if ((!hasOverallTarget && !hasMajorTarget) ||
+                studentDataStatus !== 'success' || !studentData ||
+                gradeScaleStatus !== 'success' || gradeScale.length === 0)
+            {
+                 return { overallDisplay: 'N/A', majorDisplay: 'N/A', status: 'waiting' };
+            }
+
+            // --- Start Calculation Logic ---
+            const baseOverallPts = studentData.student ? (studentData.student.DegCumPoints / 10) : 0;
+            const baseOverallCreds = studentData.student ? studentData.student.DegCumActualCredits : 0;
+            const baseMajorPts = studentData.student ? (studentData.student.DegCumMajorPoints / 10) : 0;
+            const baseMajorCreds = studentData.student ? studentData.student.DegCumMajorCredits : 0;
+
+            // Initialize calculation variables
+            let pointsToRemove = 0;
+            let creditsToRemove = 0;
+            let majorPointsToRemove = 0;
+            let majorCreditsToRemove = 0;
+            let netOverallCreditChange = 0;
+            let netMajorCreditChange = 0;
+            let relevantPlannerCourses: PlannerCourse[] = []; // Store courses not ignored
+
+            // --- First Pass: Identify Relevant Courses & Calculate Removals/Net Changes ---
+            plannerCourses.forEach(course => {
+                 const credits = (typeof course.credits === 'number' && course.credits >= 0) ? course.credits : 0;
+                 const isMajor = course.isMajor;
+                 const gradeInfo = gradeScale.find(gs => gs.Grade === course.selectedGrade);
+                 const affectsGPANew = gradeInfo ? gradeInfo.AffectsGPA : false;
+
+                 // --- Determine if course is relevant for target calculation ---
+                 let isRelevant = true;
+                 if (['W', 'E', 'I', 'IP'].includes(course.selectedGrade ?? '')) {
+                     isRelevant = false;
+                 } else if (course.selectedGrade === 'P' && !course.isRepeat) {
+                     isRelevant = false;
+                 }
+                 // --------------------------------------------------------------
+
+                 if (isRelevant) {
+                     relevantPlannerCourses.push(course); // Add to list for divisor calc later
+
+                     // --- Handle Repeats among relevant courses ---
+                     if (course.isRepeat) {
+                         const prevGradeInfo = gradeScale.find(gs => gs.Grade === course.previousGrade);
+                         if (prevGradeInfo?.AffectsGPA) {
+                             // Remove previous grade's points
+                             pointsToRemove += prevGradeInfo.Point * credits;
+                             const wasOriginalMajor = course.selectedGrade === 'P' ? (course.originalCourseWasMajor ?? false) : isMajor;
+                             if (wasOriginalMajor) { majorPointsToRemove += prevGradeInfo.Point * credits; }
+
+                             // ONLY remove credits if CURRENT grade is 'P'
+                             if (course.selectedGrade === 'P') {
+                                 creditsToRemove += credits;
+                                 if (wasOriginalMajor) { majorCreditsToRemove += credits; }
+                             }
+                         }
+                         // Repeats add 0 net credits change
+                     }
+                     // --- Handle Non-Repeats among relevant courses ---
+                     else {
+                         // Non-repeats add to net credit change
+                         netOverallCreditChange += credits;
+                         if (isMajor) { netMajorCreditChange += credits; }
+                     }
+                 } // end if(isRelevant)
+             }); // End First Pass
+
+            // --- Calculate Adjusted Base & Final Credits ---
+            const adjustedBaseOverallPts = baseOverallPts - pointsToRemove;
+            const adjustedBaseOverallCreds = baseOverallCreds - creditsToRemove;
+            const adjustedBaseMajorPts = baseMajorPts - majorPointsToRemove;
+            const adjustedBaseMajorCreds = baseMajorCreds - majorCreditsToRemove;
+
+            const finalCumulativeOverallCredits = adjustedBaseOverallCreds + netOverallCreditChange;
+            const finalCumulativeMajorCredits = adjustedBaseMajorCreds + netMajorCreditChange;
+            // --- End Adjusted Base/Final Credits ---
+
+
+            // --- Calculate Semester Divisor Credits (From RELEVANT Courses: GPA-Affecting OR Blank Grades) ---
+            let targetDivisorCreditsOverall = 0;
+            let targetDivisorCreditsMajor = 0;
+            relevantPlannerCourses.forEach(course => { // Iterate only over relevant courses
+                 const credits = (typeof course.credits === 'number' && course.credits >= 0) ? course.credits : 0;
+                 const gradeInfo = gradeScale.find(gs => gs.Grade === course.selectedGrade);
+                 const affectsGPANew = gradeInfo ? gradeInfo.AffectsGPA : false;
+
+                 // Include credits if grade is blank OR if grade affects GPA
+                 if (course.selectedGrade === null || affectsGPANew) {
+                     targetDivisorCreditsOverall += credits;
+                     if (course.isMajor) {
+                         targetDivisorCreditsMajor += credits;
+                     }
+                 }
+                 // Exclude credits if grade is explicitly non-GPA ('P', which would only be relevant if P-Repeat)
+                 // Note: W, E, I, IP were already excluded by the 'isRelevant' check earlier
+            });
+            // --- End Semester Divisor Credits ---
+
+
+            // --- Logging ---
+            console.log("Target Calc Debug (v34 - Final Logic):");
+            console.log("  Adjusted Base Points (Overall/Major):", adjustedBaseOverallPts, adjustedBaseMajorPts);
+            console.log("  Final Cumulative Credits (Overall/Major):", finalCumulativeOverallCredits, finalCumulativeMajorCredits);
+            console.log("  Target Divisor Credits (Relevant Blank/GPA) (Overall/Major):", targetDivisorCreditsOverall, targetDivisorCreditsMajor);
+            // --- End Logging ---
+
+
+            // --- Calculate Required Points & GPA ---
+            let reqOverallResult: string | number = 'N/A';
+            let reqMajorResult: string | number = 'N/A';
+            let isImpossible = false;
+
+            // Overall Calculation
+            if (hasOverallTarget) {
+                 const requiredTotalOverallPoints = targetOverall * finalCumulativeOverallCredits;
+                 const requiredSemesterPointsOverall = requiredTotalOverallPoints - adjustedBaseOverallPts;
+
+                 if (targetDivisorCreditsOverall > 0) {
+                     const gpa = requiredSemesterPointsOverall / targetDivisorCreditsOverall;
+                     reqOverallResult = gpa;
+                     if (gpa > 4.0 || gpa < 0) { isImpossible = true; }
+                 } else {
+                     reqOverallResult = `${requiredSemesterPointsOverall.toFixed(2)} points needed`;
+                 }
+            }
+
+             // Major Calculation
+             if (hasMajorTarget) {
+                 const requiredTotalMajorPoints = targetMajor * finalCumulativeMajorCredits;
+                 const requiredSemesterPointsMajor = requiredTotalMajorPoints - adjustedBaseMajorPts;
+
+                 if (targetDivisorCreditsMajor > 0) {
+                     const gpa = requiredSemesterPointsMajor / targetDivisorCreditsMajor;
+                     reqMajorResult = gpa;
+                     if (gpa > 4.0 || gpa < 0) { isImpossible = true; }
+                 } else {
+                      reqMajorResult = `${requiredSemesterPointsMajor.toFixed(2)} points needed`;
+                 }
+             }
+
+            // --- Format results for state ---
+             const finalOverallDisplay = typeof reqOverallResult === 'number'
+                 ? `${reqOverallResult.toFixed(3)} (Based on ${targetDivisorCreditsOverall} GPA credits)`
+                 : reqOverallResult === 'N/A'
+                     ? 'N/A'
+                     : `${reqOverallResult} (over 0 GPA credits)`;
+
+             const finalMajorDisplay = typeof reqMajorResult === 'number'
+                  ? `${reqMajorResult.toFixed(3)} (Based on ${targetDivisorCreditsMajor} Major GPA credits)`
+                  : reqMajorResult === 'N/A'
+                      ? 'N/A'
+                      : `${reqMajorResult} (over 0 Major GPA credits)`;
+
+
+            // Return results object
+            return {
+                overallDisplay: finalOverallDisplay,
+                majorDisplay: finalMajorDisplay,
+                status: isImpossible ? 'impossible' : 'calculated'
+            };
+            // --- End Calculation Logic ---
+
+        // Define dependencies for the useMemo hook
+        }, [targetOverallGPAInput, targetMajorGPAInput, studentDataStatus, studentData, gradeScaleStatus, gradeScale, plannerCourses]);
+        // --- End Required Semester Info useMemo ---
+
+    // --- Render Logic ---
+    if (status === "loading") {
+        return <p>Authenticating...</p>;
+    }
+
+    if (session) {
+        // --- Calculate current GPAs (only if student data loaded successfully) ---
+        let currentOverallGPA = "N/A";
+        let currentMajorGPA = "N/A";
+        if (studentDataStatus === 'success' && studentData?.student) {
+            currentOverallGPA = calculateGPA(studentData.student.DegCumPoints, studentData.student.DegCumActualCredits);
+            currentMajorGPA = calculateGPA(studentData.student.DegCumMajorPoints, studentData.student.DegCumMajorCredits);
+        }
+        // --- End GPA Calculation ---
+
+
+        return (
+            <>
+                <p>Signed in as {session.user?.email}</p>
+                <button onClick={() => signOut()}>Sign out</button>
+                <hr />
+                <h1>GPA Calculator</h1>
+
+                {/* --- Display Student Cumulative Data --- */}
+                <h2>Current Cumulative Standing</h2>
+                {studentDataStatus === "loading" && <p>Loading student data...</p>}
+                {studentDataStatus === "error" && <p style={{ color: 'red' }}>Error loading student data: {studentDataError}</p>}
+                {studentDataStatus === "success" && studentData?.student && (
+                    <div>
+                        <p>Student ID: {studentData.student.DegStudentNo}</p>
+                        {/* Calculate adjusted points for display */}
+                        <p>
+                            Overall GPA: <strong>{currentOverallGPA}</strong> ({studentData.student.DegCumActualCredits} Credits, {(studentData.student.DegCumPoints / 10).toFixed(2)} Quality Points)
+                        </p>
+                        <p>
+                             Major GPA: <strong>{currentMajorGPA}</strong> ({studentData.student.DegCumMajorCredits} Credits, {(studentData.student.DegCumMajorPoints / 10).toFixed(2)} Major Quality Points)
+                        </p>
+                    </div>
+                )}
+                 {studentDataStatus === "success" && !studentData?.student && (
+                    <p>Welcome! Your previous academic record was not found. GPA calculations will be based only on courses entered below.</p> // Handle student not found
+                 )}
+                 <hr />
+                 {/* --- End Student Cumulative Data --- */}
+
+
+                 {/* --- Display Gradescale (already implemented) --- */}
+                 <h2>Grading Scale</h2>
+                 {gradeScaleStatus === "loading" && <p>Loading grade scale...</p>}
+                 {gradeScaleStatus === "error" && <p style={{ color: 'red' }}>Error loading grade scale: {gradeScaleError}</p>}
+                 {gradeScaleStatus === "success" && gradeScale.length > 0 && (
+                     <table>
+                         <thead>
+                             <tr>
+                                 <th>Grade</th>
+                                 <th>Point</th>
+                                 <th>Affects GPA?</th>
+                                 <th>Note</th>
+                             </tr>
+                         </thead>
+                         <tbody>
+                             {gradeScale.map((item) => {
+                                 const key = item.Grade ? `grade-${item.Grade}` : `row-${Math.random()}`;
+                                 return (
+                                     <tr key={key}>
+                                         <td>{item.Grade}</td>
+                                         <td>{item.Point.toFixed(1)}</td>
+                                         <td>{item.AffectsGPA ? "Yes" : "No"}</td>
+                                         <td>{item.Note}</td>
+                                     </tr>
+                                 );
+                             })}
+                         </tbody>
+                     </table>
+                 )}
+                 {gradeScaleStatus === "success" && gradeScale.length === 0 && (<p>No grade scale data found.</p>)}
+                 <hr />
+                {/* --- End Gradescale --- */}
+
+
+                {/* --- Placeholder for Planner --- */}
+                {/* --- Semester Planner --- */}
+                <h2>Semester Planner</h2>
+                {studentDataStatus === 'success' && gradeScaleStatus === 'success' && ( // Only show planner when base data is ready
+                    <>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Course ID</th>
+                                    <th>Credits</th>
+                                    <th>Grade</th>
+                                    <th>Major?</th>
+                                    <th>Repeat?</th>
+                                    <th>Previous Grade</th>
+                                    {/* Conditionally add header for P-Repeat case later if needed */}
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+             {/* This comment outside the map is OK */}
+             {plannerCourses.map((course, index) => {
+                 const key = course.id ? `course-${course.id}` : `row-${Math.random()}`; // Use course.id now
+                 return (
+                     // NO comment directly before <tr>
+                     <tr key={key}>
+                         {/* NO comment directly before <td> */}
+                         <td>
+                                {/* *** Course ID Input *** */}
+                                <input
+                                    type="text"
+                                    value={course.catalogKey}
+                                    onChange={(e) => handlePlannerChange(course.id, 'catalogKey', e.target.value)}
+                                    placeholder="Course ID"
+                                    style={{ width: '100px' }} // Basic styling
+                                />
+                            </td>
+                         {/* NO comment directly before <td> */}
+                         <td>
+                             <input
+                                 type="number"
+                                 value={course.credits}
+                                 onChange={(e) => handlePlannerChange(course.id, 'credits', parseInt(e.target.value, 10) || 0)}
+                                 min="0"
+                                 step="1"
+                                 style={{ width: '60px' }}
+                             />
+                         </td>
+                          {/* NO comment directly before <td> */}
+                         <td>
+                             <select
+                                 value={course.selectedGrade ?? ''}
+                                 onChange={(e) => handlePlannerChange(course.id, 'selectedGrade', e.target.value || null)}
+                             >
+                                 <option value="">-- Select --</option>
+                                 {gradeScale.map(gs => (
+                                     <option key={`grade-${gs.Grade}`} value={gs.Grade}>
+                                         {gs.Grade} ({gs.Point.toFixed(1)})
+                                     </option>
+                                 ))}
+                             </select>
+                         </td>
+                          {/* NO comment directly before <td> */}
+                          <td>
+    {/* Is Major Checkbox */}
+    <input
+        type="checkbox"
+        checked={course.isMajor} // Should correctly reflect the state
+        onChange={(e) => handlePlannerChange(course.id, 'isMajor', e.target.checked)}
+    />
+</td>
+                          {/* NO comment directly before <td> */}
+                          <td>
+    {/* Is Repeat Checkbox */}
+    <input
+        type="checkbox"
+        checked={course.isRepeat} // Should correctly reflect the state
+        onChange={(e) => handlePlannerChange(course.id, 'isRepeat', e.target.checked)}
+        disabled={!studentData?.student}
+    />
+</td>
+                          {/* NO comment directly before <td> */}
+                         <td>
+                             {course.isRepeat && studentData?.student && (
+         <select
+         value={course.previousGrade ?? ''}
+         onChange={(e) => handlePlannerChange(course.id, 'previousGrade', e.target.value || null)}
+         required
+     >
+                                     <option value="">-- Select Prev --</option>
+                                     {gradeScale.map(gs => (
+                                         <option key={`prev-${gs.Grade}`} value={gs.Grade}>
+                                             {gs.Grade}
+                                         </option>
+                                     ))}
+                                 </select>
+                             )}
+                              {/* NO comment directly before div */}
+                             {course.isRepeat && course.selectedGrade === 'P' && studentData?.student && (
+                                 <div style={{ marginTop: '5px', fontSize: '0.8em' }}>
+                                     {/* ... P-Repeat input ... */}
+                                 </div>
+                             )}
+                         </td>
+                          {/* NO comment directly before <td> */}
+                          <td>
+                             {/* Remove Button */}
+                             {/* *** UPDATE onClick *** */}
+                             <button onClick={() => handleRemoveCourse(course.id)}>
+                                 Remove
+                             </button>
+                                           {/* *** Add Reset Button *** */}
+
+                         </td>
+                          {/* NO comment directly after </tr> */}
+                     </tr>
+                 );
+              })}
+         </tbody> 
+
+                        </table>
+        {/* *** UPDATE onClick *** */}
+        <button onClick={handleAddCourse} style={{ marginTop: '10px' }}>
+             Add Course
+         </button>
+         <button onClick={handleResetPlanner} style={{ marginTop: '10px', marginLeft: '10px' }}>
+                 Reset Planner to Initial State
+             </button>
+                            {/* *** Display Semester GPA Info *** */}
+                            <div style={{ marginTop: '15px', border: '1px solid #ccc', padding: '10px' }}>
+                     <h4>Planner Semester Totals:</h4>
+                     {semesterGPAInfo.status === 'loading' && <p>Calculating...</p>}
+                     {semesterGPAInfo.status === 'calculated' && (
+                         <>
+                             <p>
+                                 Semester Overall GPA: <strong>{semesterGPAInfo.overallGPA}</strong> ({semesterGPAInfo.overallCredits} GPA Credits Attempted)
+                             </p>
+                             <p>
+                                 Semester Major GPA: <strong>{semesterGPAInfo.majorGPA}</strong> ({semesterGPAInfo.majorCredits} Major GPA Credits Attempted)
+                             </p>
+                         </>
+                     )}
+                 </div>
+                 {/* *** End Display Semester GPA Info *** */}
+             </>
+         )}
+          {studentDataStatus !== 'success' && gradeScaleStatus !== 'success' && (
+             <p>Loading data for planner...</p>
+          )}
+         <hr />
+         {/* --- End Semester Planner --- */}
+
+
+                    {/* *** Display Projected GPA Info *** */}
+          <h2 style={{ marginTop: '20px' }}>Projected Cumulative Standing</h2>
+          {projectedGPAInfo.status === 'waiting' && <p>Waiting for data...</p>}
+          {projectedGPAInfo.status === 'calculated' && (
+                <div style={{ border: '1px solid #ccc', padding: '10px' }}>
+                     <p>
+                         Projected Overall GPA: <strong>{projectedGPAInfo.overallGPA}</strong> (Based on {projectedGPAInfo.finalOverallCredits.toFixed(1)} total GPA credits)
+                     </p>
+                     <p>
+                         Projected Major GPA: <strong>{projectedGPAInfo.majorGPA}</strong> (Based on {projectedGPAInfo.finalMajorCredits.toFixed(1)} total Major GPA credits)
+                     </p>
+                     <p style={{ fontSize: '0.8em', marginTop: '10px' }}>
+                         <i>Note: Projections assume official cumulative data is accurate and rely on planner inputs, especially for repeats. See disclaimer.</i>
+                     </p>
+                </div>
+            )}
+          <hr />
+         {/* *** End Display Projected GPA Info *** */}
+
+
+
+ 
+5.  **Modify Target GPA Display JSX:** Remove the Calculate button and update the display logic to use `requiredSemesterInfo`.
+
+```tsx
+         {/* --- Target GPA Section --- */}
+         <h2>Target GPA</h2>
+         <div style={{ border: '1px solid #ccc', padding: '10px', marginTop: '10px' }}>
+             <div>
+                 <label>
+                     Target Cumulative Overall GPA: 
+                     <input
+                         type="number"
+                         step="0.01"
+                         min="0"
+                         max="4.0"
+                         placeholder="e.g. 3.50"
+                         value={targetOverallGPAInput} // Keep controlled input
+                         onChange={(e) => setTargetOverallGPAInput(e.target.value)} // Keep state update
+                         style={{ width: '80px' }}
+                     />
+                 </label>
+             </div>
+             <div style={{ marginTop: '5px' }}>
+                 <label>
+                     Target Cumulative Major GPA: 
+                     <input
+                         type="number"
+                         step="0.01"
+                         min="0"
+                         max="4.0"
+                         placeholder="e.g. 3.70"
+                         value={targetMajorGPAInput} // Keep controlled input
+                         onChange={(e) => setTargetMajorGPAInput(e.target.value)} // Keep state update
+                         style={{ width: '80px' }}
+                     />
+                 </label>
+             </div>
+             {/* *** REMOVE Calculate Button *** */}
+             {/* <button onClick={handleCalculateTargetGPA} style={{ marginTop: '10px' }}>
+                 Calculate Required Semester GPA
+             </button> */}
+
+             {/* Display Area (Use requiredSemesterInfo) */}
+             {(requiredSemesterInfo.status === 'calculated' || requiredSemesterInfo.status === 'impossible') && (
+                 <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #eee' }}>
+                     <h4>Required Semester Performance (for courses in planner):</h4>
+                     <p style={ requiredSemesterInfo.status === 'impossible' && requiredSemesterInfo.overallDisplay.includes('Based on') ? { color: 'red', fontWeight: 'bold'} : {}}>
+                         Required Overall Semester GPA: <strong>{requiredSemesterInfo.overallDisplay}</strong>
+                     </p>
+                      <p style={ requiredSemesterInfo.status === 'impossible' && requiredSemesterInfo.majorDisplay.includes('Based on') ? { color: 'red', fontWeight: 'bold'} : {}}>
+                         Required Major Semester GPA: <strong>{requiredSemesterInfo.majorDisplay}</strong>
+                     </p>
+                     {requiredSemesterInfo.status === 'impossible' && (
+                        <p style={{ color: 'red', fontSize: '0.9em' }}><i>(Highlighted GPA indicates target may be unachievable with current planner credits)</i></p>
+                     )}
+                 </div>
+             )}
+             {requiredSemesterInfo.status === 'waiting' && (
+                  <p style={{ marginTop: '10px', fontStyle: 'italic' }}>(Enter valid targets or wait for data to load)</p>
+             )}
+             {requiredSemesterInfo.status === 'error' && ( // Note: error status isn't currently set in useMemo, consider adding
+                 <p style={{ color: 'red', marginTop: '10px' }}>Error: Could not calculate target GPA.</p>
+             )}
+         </div>
+         <hr />
+         {/* --- End Target GPA Section --- */}
+
+
+                {/* --- End Target GPA Placeholder --- */}
+
+                 {/* --- Placeholder for Disclaimer --- */}
+                 <h2>Disclaimer</h2>
+                 <p>(Disclaimer text coming soon...)</p>
+                 {/* --- End Disclaimer Placeholder --- */}
+
+            </>
+        );
+    }
+
+
+    // Signed out state
+    return (
+        <>
+            <p>Not signed in</p>
+            <button onClick={() => signIn("google")}>Sign in with Google</button>
+        </>
+    );
+}

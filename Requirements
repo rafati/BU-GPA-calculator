@@ -1,0 +1,164 @@
+Okay, here is a consolidated summary of the requirements for the Bethlehem University GPA Calculator, reflecting all the logic discussions and decisions, particularly the final refined logic for the Target GPA calculation (based on v34). This document should serve as a comprehensive reference.
+
+**--- Consolidated Requirements: Bethlehem University GPA Calculator (v34 Logic) ---**
+
+**1. Purpose & Goal**
+
+*   **Primary Goal:** To provide Bethlehem University students (identified via Google Login) with a tool to:
+    *   View their current official cumulative GPA (Overall and Major) based on administrative records.
+    *   Load their recent/current course registrations into an interactive calculator/planner interface.
+    *   Modify this planner data (edit courses, add hypothetical courses, remove courses) for planning and "what-if" analysis according to Bethlehem University's grading policies.
+    *   Calculate the GPA for the courses currently in the planner interface based on selected grades.
+    *   Calculate the projected Cumulative Overall and Major GPAs based on their official cumulative data plus the state of the planner.
+    *   **Automatically** calculate the required average Semester GPA needed across relevant courses listed in the planner (those expected to receive a GPA-affecting grade) to achieve user-defined target Cumulative GPAs (defaulting to 2.0).
+*   **Secondary Goals:**
+    *   Provide a flexible planning tool starting from actual registration data.
+    *   Help students understand the potential impact of grade changes or adding/dropping courses.
+
+**2. Target Audience**
+
+*   **Primary Users:** Enrolled students at Bethlehem University whose email addresses are listed in the master Google Sheet (`Students` tab) and who use the corresponding `@bethlehem.edu` Google account to log in.
+
+**3. Scope**
+
+*   **In Scope:**
+    *   User Authentication via Google OAuth, restricted to the `@bethlehem.edu` domain.
+    *   Data Retrieval (Read-Only) from Google Sheets: `Students` (cumulative), `registration` (courses), `Gradescale` (rules).
+    *   Displaying official Cumulative Data and calculated GPAs (applying Points/10 rule from `Students` sheet).
+    *   Pre-populating an editable course planner list using data from `registration`. Saving initial state for reset.
+    *   Allowing users to modify (Course ID, Credits, Grade, Major?, Repeat?), add (default 3 credits), and remove courses within the planner list (changes are temporary for the session).
+    *   Handling data lookup failures (Student Not Found = start with 0 cumulative, disable repeats).
+    *   Dynamically configuring grade point values and GPA inclusion rules based on the `Gradescale` sheet (using "Not Calcualted in GPA" note).
+    *   Handling WF grade as equivalent to F (based on `Gradescale` data).
+    *   Calculating "Semester Planner GPA" based only on planner courses with valid, GPA-affecting grades *currently selected*.
+    *   Calculating "Projected Cumulative GPA" applying BU repeat rules (Grade Replacement: removing previous points for all repeats replacing GPA-grades; removing previous credits only for P-repeats).
+    *   Input fields for Target Cumulative Overall/Major GPA (defaulting to 2.0).
+    *   **Automatic calculation** (updating as inputs change) of "Required Semester GPA" needed across planner courses (excluding those with explicitly non-GPA grades like W,E,I,IP, non-repeat P) to reach the target cumulative GPA. Displaying points needed if relevant divisor credits are zero. Highlighting impossible required GPAs (>4.0/<0.0).
+    *   Resetting the planner to its initial state.
+    *   Displaying a configurable disclaimer message (text provided externally).
+    *   User Logout.
+    *   Modern, clean, responsive UI prioritizing mobile-first experience (English language only), with branding inspired by BU website/logo.
+*   **Out of Scope:**
+    *   Writing any data back to Google Sheets.
+    *   Persistently saving user modifications made to the planner list between sessions.
+    *   Automatically suggesting grades to achieve targets.
+    *   Complex rule automation beyond specified repeat logic.
+    *   User account management separate from Google.
+    *   Localization (Interface is English only).
+    *   Official academic record keeping or advising.
+
+**4. Functional Requirements**
+
+*   **Authentication & Authorization:** FR_AUTH1-FR_AUTH5 (As defined: Google Login @bethlehem.edu, Data Lookup, Failure Handling, Student Not Found Handling, Logout).
+    *   **FR_AUTH1: Google Login:** Allow users to log in via Google OAuth, restricted to the `@bethlehem.edu` domain.
+    *   **FR_AUTH2: Data Lookup:** Upon successful login, retrieve the user's email and look up their corresponding `DegStudentNo` in the `Students` sheet.
+    *   **FR_AUTH3: Failure Handling:** Gracefully handle API errors during login or data fetch (e.g., network issues, invalid credentials).
+    *   **FR_AUTH4: Student Not Found Handling:** If the logged-in user's email is not found in the `Students` sheet, initialize the calculator with 0 cumulative data and potentially disable repeat-specific features.
+    *   **FR_AUTH5: Logout:** Provide a mechanism for the user to sign out, clearing their session and resetting the calculator state.
+*   **FR_AUTH6: Access Control & Student Selection:**
+    *   The system will determine user access rights based on multiple sources, with permissions being cumulative across all roles:
+        1.  **Advisor-based Access:** 
+            *   If the authenticated user's email (or the override email, if active) is found in the `Advisor` column of the `Students` sheet, the user is authorized to access all students for whom they are listed as the advisor.
+        2.  **Class Access Sheet-based Access:**
+            *   The system will check a new `Class Access` sheet which contains the following columns:
+                *   `FacEmail`: Faculty/staff email address
+                *   `Department`: Department the faculty/staff belongs to (may be empty)
+                *   `Faculty`: Faculty the user belongs to (may be empty)
+                *   `AccessAllStudents`: If "Yes", grants access to all students in the system
+                *   `Student`: Contains specific student IDs the user should have access to (may be empty)
+            *   Access determination logic (permissions are cumulative across all applicable rules):
+                *   If `AccessAllStudents` is "Yes", the user has access to all student records in the system
+                *   If specific `Student` IDs are listed, the user has access to those specific students
+                *   If `Department` is specified, the user has access to all students who belong to that department
+                *   If `Faculty` is specified, the user has access to all students who belong to that faculty
+    *   Once access rights are determined:
+        *   The system will create a unified list of all students the user has access to from all roles
+        *   If the user has access to multiple students, the application must present an interface for searching and selecting a specific student to load in the calculator
+        *   The search interface should allow typing a partial student ID and suggest matching students as they type
+        *   Once a valid student is selected, the calculator will load that student's cumulative data and course registrations
+    *   If the user has no access to any student records through any of these roles, the "Student Not Found" handling (FR_AUTH4) applies.
+*   **Data Handling & Configuration:** FR_DATASRC1, FR_CONFIG1, FR_DATA_FRESHNESS, FR_DATA_MISMATCH (As defined: Secure read-only Sheets access, Load/Cache `Gradescale`, Frequent student data reads, Ignore `RegGrade` not in `Gradescale`).
+*   **Display:** FR_DISPLAY1-FR_DISPLAY7 (As defined: Base Cum Data+GPA(Points/10), Planner Table, Semester GPA+Credits, Projected Cum GPA+Credits, Target GPA inputs & Auto-Calculated Required GPA/Points, Configurable Disclaimer).
+*   **Planner Functionality:** FR_POPULATE1, FR_INTERACT1-FR_INTERACT7 (As defined: Populate from sheet & save initial state, Editable fields, Conditional Previous Grade/Original Major inputs, State updates via handlers, Add/Remove/Reset buttons).
+*   **Calculations:**
+    *   **FR_CALC_SEMESTER:** Calculates Semester GPA based only on planner courses with currently selected GPA-affecting grades. Divisor = Credits of courses with selected GPA-affecting grades.
+    *   **FR_CALC_PROJECTED:** Calculates Projected Cum GPA. Uses base data adjusted by removals (points for all repeats, credits for P-repeats) plus net changes (points based on grade difference for repeats, credits only for non-repeats).
+    *   **FR_CALC_TARGET (v34 Logic):** Automatically calculates Required Semester GPA based on Target Cum GPA inputs and planner state. Logic Summary:
+        1.  Identify relevant planner courses (exclude W,E,I,IP and non-repeat P).
+        2.  Calculate `AdjustedBasePoints/Credits` (Base - P-repeat credits/points - *all* relevant repeat points).
+        3.  Calculate `NetCreditsAddedByPlanner` (only non-repeats from relevant courses).
+        4.  Calculate `FinalCumulativeCredits` (`AdjustedBaseCredits` + `NetCreditsAddedByPlanner`).
+        5.  Calculate `TotalPointsNeeded` (`TargetCumulativeGPA` * `FinalCumulativeCredits`).
+        6.  Calculate `RequiredSemesterPoints` (`TotalPointsNeeded` - `AdjustedBasePoints`).
+        7.  Calculate `SemesterDivisorCredits` (from relevant courses: sum credits if grade is blank OR grade `AffectsGPA`).
+        8.  If `SemesterDivisorCredits` > 0, `RequiredSemesterGPA` = `RequiredSemesterPoints` / `SemesterDivisorCredits`.
+        9.  Else, output `RequiredSemesterPoints` needed over 0 GPA credits.
+        10. Format output string including divisor credits. Handle Overall/Major separately.
+*   **Sharing Functionality:**
+    *   **FR_SHARE1: Generate Shareable Link:** Add a button or mechanism to generate a unique URL that encodes the current state of the calculator. This includes:
+        *   Editable Base Cumulative Overall Credits
+        *   Editable Base Cumulative Overall Points
+        *   Editable Base Cumulative Major Credits
+        *   Editable Base Cumulative Major Points
+        *   The current list of `plannerCourses` (including course ID, credits, selected grade, major status, repeat status, previous grade, and original major status if applicable).
+        *   Target Overall GPA Input
+        *   Target Major GPA Input
+        *   Student ID (DegStudentNo) if available (`sId`)
+        *   Base Data Note from Students sheet (`bDN`)
+    *   **FR_SHARE2: Load State from Link:** The application must be able to parse the data encoded in a shared link URL (when visited directly) and pre-populate the calculator with the corresponding values.
+    *   **FR_SHARE3: No Authentication for Shared Link:** Accessing a shared link and interacting with the pre-populated calculator state should **not** require Google authentication. The user accessing the link operates independently of any logged-in session.
+    *   **FR_SHARE4: Configurable Base URL:** The base URL used for generating the shareable link (e.g., `https://myapp.com/calculator?data=...`) must be read dynamically from a configuration source, specifically cell `B2` of the Google Sheet used for general configuration (likely the same sheet as the `Gradescale` or a dedicated `Config` sheet - *Clarify which sheet if necessary*).
+
+*   **Printing Functionality:**
+    *   **FR_PRINT1: Print Calculator:** The application must provide a "Print" button that allows users to print the current state of the calculator in a well-formatted layout.
+    *   **FR_PRINT2: Print Layout:** The print layout must be optimized for A4 paper size and designed to fit on a single page.
+    *   **FR_PRINT3: Print Content:** The printed output must include:
+        *   Student information (ID, name if available)
+        *   Base cumulative data (Overall and Major credits/points/GPA)
+        *   Planner courses table with all relevant information (Course ID, Credits, Grade, Major status, etc.)
+        *   Calculated results (Semester GPA, Projected Cumulative GPAs, Required Semester GPA)
+        *   Timestamp indicating when the print was generated
+    *   **FR_PRINT4: Print Styling:** The print layout must be clean, professional, and use appropriate font sizes and spacing to ensure readability while maintaining the single-page constraint.
+    *   **FR_PRINT5: Print Preview:** When possible, provide a print preview dialog using the browser's native functionality.
+    *   **FR_PRINT6: Responsive Print Layout:** The print layout must adjust appropriately to fit all required information on a single page regardless of the number of courses in the planner.
+
+**5. Non-Functional Requirements**
+
+*   **NFR1: Accuracy:** Calculations must precisely implement BU rules.
+*   **NFR2: Usability:** Intuitive, modern, clean aesthetic. Clear feedback.
+*   **NFR3: Performance:** Responsive feel.
+*   **NFR4: Platform & Responsiveness:** Web Browser, Responsive, Mobile-First priority.
+*   **NFR5: Accessibility:** Basic adherence (WCAG AA where feasible).
+*   **NFR6: Clarity:** Clear labels, explanations, disclaimers.
+*   **NFR7: Security:** Secure OAuth (domain restricted), secure credentials, read-only access, standard web protections.
+*   **NFR8: Privacy:** No persistent storage of user edits.
+*   **NFR9: Data Dependency:** Reliant on Sheets API and sheet structure/accuracy. Error handling crucial.
+*   **NFR10: Reliability:** Dependent on Google Cloud Services.
+*   **NFR11: Branding:** UI inspired by BU website/logo. Professional look.
+*   **NFR12: Localization:** English language ONLY.
+
+**6. Data Requirements**
+
+*   **Input Source (Google Sheets):** Document ID, Service Account Credentials. Sheet Names (`Students`, `registration`, `Gradescale`) and specified Columns.
+*   **Configuration Data:** Dynamically loaded from `Gradescale`. External text for Disclaimer.
+*   **User Input (Session):** Edits within planner table, Target GPA values (default 2.0).
+*   **Calculated Outputs:** Current Cum GPA, Semester Planner GPA, Projected Cum GPA, Required Semester GPA/Points Needed.
+
+**7. Key Assumptions**
+
+*   Google Sheets are accurate, maintained, and reflect BU policy.
+*   `Students` sheet data reflects past repeats correctly up to its last update.
+*   `Gradescale.Note` field reliably identifies non-GPA grades via "Not Calcualted in GPA".
+*   WF grade configured as F in `Gradescale`.
+*   Points/10 rule applies ONLY to base cumulative points from `Students` sheet.
+*   Users provide correct inputs where required (Previous Grade, Original Major for P-Repeat).
+*   **Target GPA Logic (v34):** Divisor includes credits for Blank grades or GPA-Affecting grades from relevant planner courses; Base points adjusted for points from ALL replaced GPA-affecting grades; Base credits adjusted ONLY for credits from P-repeat replaced grades; Net credits added only by non-repeats.
+*   Student Not Found handling (0 base, no repeats) is acceptable.
+*   Ignoring `RegGrade` not in `Gradescale` (leave planner grade blank) is acceptable.
+*   `Gradescale` changes infrequently (refresh on app start/infrequently is okay).
+
+---
+
+This document should now be a stable reference point capturing the full requirements and logic as discussed.
+
+
