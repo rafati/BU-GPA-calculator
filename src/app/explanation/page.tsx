@@ -2,7 +2,8 @@
 'use client'; // This page needs client-side hooks for search params
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState, useMemo } from 'react'; // Ensure useMemo is imported
+import { useEffect, useState, useMemo, Suspense } from 'react'; // Ensure useMemo and Suspense are imported
+import ClientWrapper from '@/components/ClientWrapper';
 
 // --- Re-define Interfaces needed for type safety ---
 // (Ideally, move these to a shared types file, e.g., src/types/index.ts)
@@ -10,7 +11,7 @@ interface GradeScaleRow { Grade: string; Point: number; Note: string; AffectsGPA
 interface PlannerCourse { id: string; catalogKey: string; credits: number; selectedGrade: string | null; isMajor: boolean; isRepeat: boolean; previousGrade: string | null; originalCourseWasMajor?: boolean | null; } // Keep originalCourseWasMajor for data consistency if passed
 // --- End Interfaces ---
 
-export default function ExplanationPage() {
+function ExplanationPageContent() {
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(true);
 
@@ -435,5 +436,15 @@ export default function ExplanationPage() {
                  </section>
              </div>
         </div>
+    );
+}
+
+export default function Page() {
+    return (
+        <ClientWrapper>
+            <Suspense fallback={<div>Loading...</div>}>
+                <ExplanationPageContent />
+            </Suspense>
+        </ClientWrapper>
     );
 }

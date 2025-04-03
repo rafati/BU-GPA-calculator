@@ -11,14 +11,21 @@ async function getSheetsClient() {
 
     let credentials;
     try {
-        // Try parsing the credentials string directly first
+        // First, try to parse the string directly
         credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS);
     } catch (error) {
-        // If parsing fails, it's likely an issue with the env var format
-        console.error("Failed to parse GOOGLE_SERVICE_ACCOUNT_CREDENTIALS JSON string from environment variable.", error);
-        throw new Error("Failed to parse GOOGLE_SERVICE_ACCOUNT_CREDENTIALS JSON. Check .env.local formatting.");
+        try {
+            // If that fails, try to parse after removing any extra quotes
+            const cleanedString = process.env.GOOGLE_SERVICE_ACCOUNT_CREDENTIALS
+                .replace(/^['"]|['"]$/g, '') // Remove surrounding quotes
+                .replace(/\\"/g, '"') // Replace escaped quotes
+                .replace(/\\n/g, '\n'); // Replace escaped newlines
+            credentials = JSON.parse(cleanedString);
+        } catch (innerError) {
+            console.error("Failed to parse GOOGLE_SERVICE_ACCOUNT_CREDENTIALS JSON string from environment variable.", innerError);
+            throw new Error("Failed to parse GOOGLE_SERVICE_ACCOUNT_CREDENTIALS JSON. Check .env.local formatting.");
+        }
     }
-
 
     const auth = new google.auth.GoogleAuth({
         credentials,
@@ -26,7 +33,7 @@ async function getSheetsClient() {
     });
 
     const authClient = await auth.getClient();
-    const sheets = google.sheets({ version: 'v4', auth: authClient });
+    const sheets = google.sheets({ version: 'v4', auth: authClient as any }); // Type assertion to fix the error
     return sheets;
 }
 

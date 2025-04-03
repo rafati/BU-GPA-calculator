@@ -1,6 +1,9 @@
-"use client";
+'use client';
+
+import ClientWrapper from '@/components/ClientWrapper';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 // ... other imports
 import { useSession, signIn, signOut } from "next-auth/react";
 import React, { useState, useEffect, useMemo, useRef } from "react"; // <-- UPDATED import line to include React and useRef
@@ -82,7 +85,7 @@ function formatDate(date: Date): string {
   return `${day} ${month} ${year}, ${hours}:${minutes}`;
 }
 
-export default function Home() {
+function HomePageContent() {
     const { data: session, status } = useSession();
     const searchParams = useSearchParams();
     const isShareLink = !!searchParams.get('data'); // Check if it's a share link
@@ -2152,5 +2155,23 @@ export default function Home() {
                 </footer>
             </div>
         </div>
+    );
+}
+
+function HomePage() {
+    return (
+        <ClientWrapper>
+            <HomePageContent />
+        </ClientWrapper>
+    );
+}
+
+export default function Page() {
+    return (
+        <ClientWrapper>
+            <Suspense fallback={<div>Loading...</div>}>
+                <HomePage />
+            </Suspense>
+        </ClientWrapper>
     );
 }
