@@ -1,3 +1,5 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Keep it minimal - let Tailwind handle base styles */
