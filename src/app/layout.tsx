@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google"; // Keep existing font imports
+import { Inter } from "next/font/google";
 import "./globals.css"; // Keep existing CSS import
 import { SessionProvider } from "@/providers/SessionProvider"; // *** ADD THIS IMPORT ***
 
 // Keep existing font setup
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
   subsets: ["latin"],
-});
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 // *** UPDATE METADATA (Recommended) ***
@@ -27,9 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       {/* Keep existing body tag and className */}
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${inter.className} antialiased`}>
         {/* *** WRAP CHILDREN WITH SESSIONPROVIDER *** */}
         <SessionProvider>
           {children}
