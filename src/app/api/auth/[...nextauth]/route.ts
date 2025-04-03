@@ -1,6 +1,11 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
+// Determine the correct NEXTAUTH_URL based on the environment
+const nextAuthUrl = process.env.NODE_ENV === 'production' 
+  ? process.env.NEXTAUTH_URL_PROD 
+  : process.env.NEXTAUTH_URL;
+
 export const authOptions = {
   providers: [
     GoogleProvider({

@@ -5,6 +5,10 @@ const nextConfig = {
   },
   eslint: {
     ignoreDuringBuilds: true
+  },
+  env: {
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_URL_PROD: process.env.NEXTAUTH_URL_PROD,
   }
 };
 
