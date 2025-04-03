@@ -1391,7 +1391,7 @@ function HomePageContent() {
                 >
                     Sign In with Google
                          </button>
-                         </div>
+                    </div>
         );
     }
 
@@ -1676,17 +1676,17 @@ function HomePageContent() {
                 <div className="hidden print-courses print-only">
                     <div className="print-section-heading">Course Planner</div>
                     <table className="print-courses-table">
-                        <thead>
-                            <tr>
+                         <thead>
+                             <tr>
                                 <th className="print-courses-th">COURSE</th>
                                 <th className="print-courses-th">CREDITS</th>
                                 <th className="print-courses-th">GRADE</th>
                                 <th className="print-courses-th">MAJOR?</th>
                                 <th className="print-courses-th">REPEAT?</th>
                                 <th className="print-courses-th">PREV.GRADE</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                             </tr>
+                         </thead>
+                         <tbody>
                             {plannerCourses.map(course => (
                                 <tr key={`print-course-${course.id}`}>
                                     <td className="print-courses-td">{course.catalogKey}</td>
@@ -1695,15 +1695,15 @@ function HomePageContent() {
                                     <td className="print-courses-td">{course.isMajor ? 'Yes' : 'No'}</td>
                                     <td className="print-courses-td">{course.isRepeat ? 'Yes' : 'No'}</td>
                                     <td className="print-courses-td">{course.isRepeat ? (course.previousGrade || '-') : '-'}</td>
-                                </tr>
+                                     </tr>
                             ))}
                             {plannerCourses.length === 0 && (
                                 <tr>
                                     <td colSpan={6} className="print-courses-td text-center italic">No courses in planner.</td>
                                 </tr>
                             )}
-                        </tbody>
-                    </table>
+                         </tbody>
+                     </table>
                 </div>
 
                 {/* Footer with disclaimer and timestamp */}
@@ -1748,9 +1748,9 @@ function HomePageContent() {
                               className="px-4 py-1 text-sm text-gray-700 hover:text-red-600 rounded"
                           >
                               Sign Out
-                                 </button>
-                         )}
-                     </div>
+                             </button>
+                     )}
+                 </div>
                     {/* --- End Update --- */}
                 </header>
 
@@ -1765,8 +1765,8 @@ function HomePageContent() {
                             <h2 className="text-xl font-semibold text-red-600 mb-4">Access Denied</h2>
                             <p className="text-gray-700">Student data not found for the current user, or access is not permitted.</p>
                             {/* Optionally add more info or contact details here */}
-                    </div>
-                )}
+                </div>
+            )}
 
                     {accessType === 'advisor' && (
                         <div className="max-w-md mx-auto mt-10 p-6 border rounded-lg shadow-md bg-white">
@@ -1775,7 +1775,7 @@ function HomePageContent() {
                             <div className="space-y-3">
                                 <div className="relative">
                                     <label htmlFor="advisee-input" className="block text-sm font-medium text-gray-700 mb-1">Search:</label>
-                         <input
+                     <input
                                         id="advisee-input"
                                         type="text"
                                         value={studentIdInput}
@@ -1798,7 +1798,7 @@ function HomePageContent() {
                                             ))}
                                         </ul>
                                     )}
-                 </div>
+             </div>
                                 <button
                                     onClick={handleLoadSelectedStudent}
                                     disabled={!selectedValidStudentId || isLoadingStudent}
@@ -1811,7 +1811,7 @@ function HomePageContent() {
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                             </svg>
                                             Loading Student Data...
-                                        </div>
+             </div>
                                     ) : (
                                         "Load Student Data"
                                     )}
@@ -1823,8 +1823,8 @@ function HomePageContent() {
                                     </p>
                                 )}
                             </div>
-                     </div>
-                 )}
+                 </div>
+             )}
                     
                     {accessType === 'direct' && (
                         // Calculator content - two-column layout 
@@ -1859,7 +1859,7 @@ function HomePageContent() {
                                     <div className="flex justify-between items-center text-gray-700 font-medium">
                                          <span>Current Overall GPA:</span>
                                          <span>{calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)}</span>
-             </div>
+         </div>
                                      <div className="flex justify-between items-center text-gray-700 font-medium mb-2">
                                          <span>Current Major GPA:</span>
                                          <span>{calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)}</span>
@@ -2160,9 +2160,7 @@ function HomePageContent() {
 
 function HomePage() {
     return (
-        <ClientWrapper>
-            <HomePageContent />
-        </ClientWrapper>
+        <HomePageContent />
     );
 }
 
