@@ -2,4 +2,165 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 246, 248, 250;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+}
+
+/* Print-specific styles */
+@media print {
+  /* Hide screen-only elements */
+  .screen-only {
+      display: none !important;
+  }
+  
+  /* Show print-only elements */
+  .print-only {
+      display: block !important;
+  }
+  
+  /* Basic page setup */
+  body {
+      font-family: sans-serif;
+      font-size: 9pt;
+      line-height: 1.3;
+      color: black;
+      background: white;
+      margin: 0; /* Remove default body margin */
+  }
+  
+  @page {
+      size: A4;
+      margin: 1cm;
+  }
+  
+  /* Print Header */
+  .print-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      margin-bottom: 0.5cm !important;
+      padding-bottom: 0.2cm !important;
+      border-bottom: 1px solid #ccc !important;
+  }
+  
+  .print-logo {
+      height: 1.5cm !important; /* Adjust height as needed */
+      width: auto !important;
+      flex-shrink: 0;
+  }
+  
+  .print-title-container {
+      flex-grow: 1 !important;
+      text-align: center !important;
+  }
+  
+  .print-main-title {
+      font-size: 12pt !important;
+      font-weight: bold !important;
+  }
+  
+  .print-student-id {
+      font-size: 10pt !important;
+      font-weight: bold !important;
+      margin-top: 0.1cm !important;
+  }
+  
+  .print-logo-placeholder {
+      width: 1.5cm; /* Match logo width or adjust for balance */
+      height: 1.5cm;
+      flex-shrink: 0;
+  }
+  
+  /* Three-column layout */
+  .print-columns {
+      display: flex !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      margin-bottom: 0.5cm !important;
+      border-bottom: 1px solid #ccc !important;
+      padding-bottom: 0.3cm !important;
+  }
+  
+  .print-column {
+      width: 31% !important; /* Adjust spacing if needed */
+  }
+  
+  .print-section-heading {
+      font-size: 10pt !important;
+      font-weight: bold !important;
+      margin-bottom: 0.2cm !important;
+      padding-bottom: 0.1cm !important;
+      border-bottom: 1px solid black !important;
+  }
+  
+  .print-row {
+      display: flex !important;
+      justify-content: space-between !important;
+      margin-bottom: 0.1cm !important;
+  }
+  
+  .print-label {
+      padding-right: 0.5cm !important;
+  }
+  
+  .print-value {
+      font-weight: bold !important;
+      text-align: right !important;
+  }
+  
+  .print-based-on {
+      font-size: 7pt !important;
+      font-style: italic !important;
+      justify-content: flex-start !important; /* Align left */
+      margin-top: 0.1cm !important;
+  }
+  
+  /* Course list styling (Placeholder) */
+  .print-courses {
+      margin-top: 0.5cm !important;
+  }
+  
+  .print-courses-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      font-size: 8pt !important;
+  }
+  
+  .print-courses-th {
+      background-color: #f0f0f0 !important;
+      border: 1px solid #ddd !important;
+      padding: 0.1cm 0.15cm !important;
+      text-align: left !important;
+      font-weight: bold !important;
+  }
+  
+  .print-courses-td {
+      border: 1px solid #ddd !important;
+      padding: 0.1cm 0.15cm !important;
+      text-align: left !important;
+  }
+  
+  .print-courses-td.text-center {
+      text-align: center !important;
+  }
+  
+  .print-courses-td.italic {
+      font-style: italic !important;
+      color: #666 !important;
+  }
+  
+  /* Footer */
+  .print-footer {
+      margin-top: 0.5cm !important;
+      border-top: 1px solid #ccc !important;
+      padding-top: 0.2cm !important;
+  }
+}
+
 /* Keep it minimal - let Tailwind handle base styles */

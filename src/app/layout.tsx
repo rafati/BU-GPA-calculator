@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css"; // Keep existing CSS import
+import "./print-styles.css"; // Add print styles
 import { SessionProvider } from "@/providers/SessionProvider"; // *** ADD THIS IMPORT ***
 
 // Keep existing font setup
