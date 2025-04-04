@@ -460,22 +460,36 @@ function HomePageContent() {
             console.log("Fetching base URL...");
             const fetchBaseUrl = async () => {
                 try {
+                    // Set a fallback URL based on the current window location
+                    const fallbackUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+                    
                     const res = await fetch('/api/config');
                     if (!res.ok) {
                         const errorData = await res.json().catch(() => ({}));
+                        console.error("Using fallback URL due to API error:", fallbackUrl);
+                        setBaseUrl(fallbackUrl);
+                        setBaseUrlStatus("success");
                         throw new Error(errorData.error || `HTTP error! Status: ${res.status}`);
                     }
+                    
                     const data = await res.json();
                     if (!data.baseUrl) {
+                        console.error("Base URL not found in API response, using fallback:", fallbackUrl);
+                        setBaseUrl(fallbackUrl);
+                        setBaseUrlStatus("success");
                         throw new Error("Base URL not found in API response.");
                     }
+                    
                     setBaseUrl(data.baseUrl);
                     setBaseUrlStatus("success");
                     console.log("Base URL loaded:", data.baseUrl);
                 } catch (error: any) {
                     console.error("Error fetching base URL:", error);
                     setBaseUrlError(error.message || "Failed to load base URL.");
-                    setBaseUrlStatus("error");
+                    // Don't set error status if we've already set a fallback URL and status
+                    if (baseUrl === null) {
+                        setBaseUrlStatus("error");
+                    }
                 }
             };
             fetchBaseUrl();
@@ -1180,9 +1194,16 @@ function HomePageContent() {
             const encodedData = encodeURIComponent(dataString);
 
             // 4. Construct the full URL
+            // Determine if we're in production or development
+            const currentUrl = window.location.origin;
+            const isProduction = !currentUrl.includes('localhost') && !currentUrl.includes('127.0.0.1');
+            
+            // Use the current URL in production, or the configured baseUrl in development
+            const effectiveBaseUrl = isProduction ? currentUrl : baseUrl;
+            
             // Ensure baseUrl doesn't already end with a slash or question mark
-            const urlSeparator = baseUrl.includes('?') ? '&' : '?';
-            const shareableLink = `${baseUrl}${urlSeparator}data=${encodedData}`;
+            const urlSeparator = effectiveBaseUrl.includes('?') ? '&' : '?';
+            const shareableLink = `${effectiveBaseUrl}${urlSeparator}data=${encodedData}`;
 
             // 5. Copy link to clipboard and provide feedback
             navigator.clipboard.writeText(shareableLink)
