@@ -38,6 +38,9 @@ Okay, here is a consolidated summary of the requirements for the Bethlehem Unive
     *   Displaying a configurable disclaimer message (text provided externally).
     *   User Logout.
     *   Modern, clean, responsive UI prioritizing mobile-first experience (English language only), with branding inspired by BU website/logo.
+    *   **Space-efficient UI layout** that minimizes vertical scrolling, particularly on mobile devices, featuring:
+        * Combined GPA Results section that displays both Semester Planner and Projected Cumulative GPAs in a single view
+        * Compact mobile course entry display that fits all controls for a course in a minimal amount of vertical space
 *   **Out of Scope:**
     *   Writing any data back to Google Sheets.
     *   Persistently saving user modifications made to the planner list between sessions.
@@ -79,6 +82,9 @@ Okay, here is a consolidated summary of the requirements for the Bethlehem Unive
     *   If the user has no access to any student records through any of these roles, the "Student Not Found" handling (FR_AUTH4) applies.
 *   **Data Handling & Configuration:** FR_DATASRC1, FR_CONFIG1, FR_DATA_FRESHNESS, FR_DATA_MISMATCH (As defined: Secure read-only Sheets access, Load/Cache `Gradescale`, Frequent student data reads, Ignore `RegGrade` not in `Gradescale`).
 *   **Display:** FR_DISPLAY1-FR_DISPLAY7 (As defined: Base Cum Data+GPA(Points/10), Planner Table, Semester GPA+Credits, Projected Cum GPA+Credits, Target GPA inputs & Auto-Calculated Required GPA/Points, Configurable Disclaimer).
+*   **FR_DISPLAY8: Optimized UI Layout:** 
+    *   **FR_DISPLAY8.1: Combined GPA Results:** Display both Semester Planner GPA and Projected Cumulative GPA in a single, unified section to minimize vertical space usage while maintaining all relevant information.
+    *   **FR_DISPLAY8.2: Compact Mobile Course Display:** Provide a space-efficient mobile layout for course entries that uses a grid layout to organize all course controls (ID, credits, grade, major/repeat checkboxes) in minimal vertical space.
 *   **Planner Functionality:** FR_POPULATE1, FR_INTERACT1-FR_INTERACT7 (As defined: Populate from sheet & save initial state, Editable fields, Conditional Previous Grade/Original Major inputs, State updates via handlers, Add/Remove/Reset buttons).
 *   **Calculations:**
     *   **FR_CALC_SEMESTER:** Calculates Semester GPA based only on planner courses with currently selected GPA-affecting grades. Divisor = Credits of courses with selected GPA-affecting grades.
@@ -136,6 +142,7 @@ Okay, here is a consolidated summary of the requirements for the Bethlehem Unive
 *   **NFR10: Reliability:** Dependent on Google Cloud Services.
 *   **NFR11: Branding:** UI inspired by BU website/logo. Professional look.
 *   **NFR12: Localization:** English language ONLY.
+*   **NFR13: Space Efficiency:** UI design must maximize information density while maintaining readability, with special focus on reducing vertical scrolling on mobile devices.
 
 **6. Data Requirements**
 
@@ -156,9 +163,27 @@ Okay, here is a consolidated summary of the requirements for the Bethlehem Unive
 *   Student Not Found handling (0 base, no repeats) is acceptable.
 *   Ignoring `RegGrade` not in `Gradescale` (leave planner grade blank) is acceptable.
 *   `Gradescale` changes infrequently (refresh on app start/infrequently is okay).
+*   Mobile users value compact, space-efficient layouts to minimize scrolling while accessing all functionality.
+
+**8. UI/UX Implementation Details**
+
+*   **Combined GPA Results Display:**
+    *   A single card/box that contains both Semester and Projected GPA information
+    *   Side-by-side layout on larger screens, stacked on very small screens
+    *   Consistent color coding: green for Semester GPAs, blue for Projected GPAs
+    *   Compact typography with appropriately sized headings and clear hierarchy
+    *   Includes succinct explanatory text for each section
+
+*   **Mobile Course Entry Layout:**
+    *   Grid-based layout that organizes course information horizontally where possible
+    *   Top row: Course ID, Credits, Grade selector in a space-efficient grid
+    *   Second row: Major/Repeat checkboxes and remove button
+    *   Previous Grade selector appears conditionally only when Repeat is checked
+    *   Reduced padding and spacing between elements while maintaining touch targets
+    *   Smaller but readable font sizes for labels and values
 
 ---
 
-This document should now be a stable reference point capturing the full requirements and logic as discussed.
+This document should now be a stable reference point capturing the full requirements and logic as discussed, including the latest UI optimization changes.
 
 
