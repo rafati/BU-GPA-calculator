@@ -58,6 +58,7 @@ Okay, here is a consolidated summary of the requirements for the Bethlehem Unive
     *   **FR_AUTH3: Failure Handling:** Gracefully handle API errors during login or data fetch (e.g., network issues, invalid credentials).
     *   **FR_AUTH4: Student Not Found Handling:** If the logged-in user's email is not found in the `Students` sheet, initialize the calculator with 0 cumulative data and potentially disable repeat-specific features.
     *   **FR_AUTH5: Logout:** Provide a mechanism for the user to sign out, clearing their session and resetting the calculator state.
+    *   **FR_AUTH7: Account Selection:** Configure Google authentication to always display the account selection screen, allowing users to choose from all available logged-in Google accounts.
 *   **FR_AUTH6: Access Control & Student Selection:**
     *   The system will determine user access rights based on multiple sources, with permissions being cumulative across all roles:
         1.  **Advisor-based Access:** 
@@ -85,6 +86,22 @@ Okay, here is a consolidated summary of the requirements for the Bethlehem Unive
 *   **FR_DISPLAY8: Optimized UI Layout:** 
     *   **FR_DISPLAY8.1: Combined GPA Results:** Display both Semester Planner GPA and Projected Cumulative GPA in a single, unified section to minimize vertical space usage while maintaining all relevant information.
     *   **FR_DISPLAY8.2: Compact Mobile Course Display:** Provide a space-efficient mobile layout for course entries that uses a grid layout to organize all course controls (ID, credits, grade, major/repeat checkboxes) in minimal vertical space.
+*   **FR_DISPLAY9: GPA Results Card:**
+    *   **FR_DISPLAY9.1: Tab Navigation:** Implement a tab-based interface with three tabs: Semester, Projected, and Target.
+    *   **FR_DISPLAY9.2: Consistent Formatting:** Format all GPA values to display exactly three decimal places.
+    *   **FR_DISPLAY9.3: Credit Display:** Display all credit values as whole numbers without decimal places.
+    *   **FR_DISPLAY9.4: Tab-Specific Footers:**
+        * **Semester Tab Footer:** Display "Projected: CUM/Major" and "Target: CUM/Major" values.
+        * **Projected Tab Footer:** Display "Semester: CUM/Major" and "Target: CUM/Major" values.
+        * **Target Tab Footer:** Display "Semester: CUM/Major" and "Projected: CUM/Major" values.
+    *   **FR_DISPLAY9.5: Negative Value Handling:** Display negative GPA or points values in red text.
+    *   **FR_DISPLAY9.6: Target Tab Cards:** Display dedicated cards showing "Required Semester GPA" and "Required Semester Major GPA" with credits information.
+        * Include "Based on X semester credits and Y total credits" under each GPA value.
+        * Show "points" suffix when displaying point values instead of GPA.
+    *   **FR_DISPLAY9.7: Warning Messages:** Display appropriate warning messages when:
+        * Overall or Major GPA is above 4.0 (impossible to achieve)
+        * Semester credits are 0 (no courses with grades that affect GPA)
+        * Do not show warnings for negative GPA/points values
 *   **Planner Functionality:** FR_POPULATE1, FR_INTERACT1-FR_INTERACT7 (As defined: Populate from sheet & save initial state, Editable fields, Conditional Previous Grade/Original Major inputs, State updates via handlers, Add/Remove/Reset buttons).
 *   **Calculations:**
     *   **FR_CALC_SEMESTER:** Calculates Semester GPA based only on planner courses with currently selected GPA-affecting grades. Divisor = Credits of courses with selected GPA-affecting grades.
@@ -143,6 +160,7 @@ Okay, here is a consolidated summary of the requirements for the Bethlehem Unive
 *   **NFR11: Branding:** UI inspired by BU website/logo. Professional look.
 *   **NFR12: Localization:** English language ONLY.
 *   **NFR13: Space Efficiency:** UI design must maximize information density while maintaining readability, with special focus on reducing vertical scrolling on mobile devices.
+*   **NFR14: Data Format Consistency:** All GPA values must be displayed with exactly three decimal places, and all credit values must be displayed as whole numbers.
 
 **6. Data Requirements**
 
@@ -182,8 +200,19 @@ Okay, here is a consolidated summary of the requirements for the Bethlehem Unive
     *   Reduced padding and spacing between elements while maintaining touch targets
     *   Smaller but readable font sizes for labels and values
 
+*   **GPA Results Card Implementation:**
+    *   Tab-based interface with three sections (Semester, Projected, Target) for efficient space usage
+    *   Consistent formatting for all GPA values (3 decimal places) and credit values (whole numbers)
+    *   Dynamic footers for each tab that cross-reference relevant GPA information:
+        * Semester tab shows Projected and Target GPAs in footer
+        * Projected tab shows Semester and Target GPAs in footer
+        * Target tab shows Semester and Projected GPAs in footer
+    *   Visual indicators for negative values (red text) and values above 4.0 (warning message)
+    *   Target tab includes detailed credit information under each required GPA: "Based on X semester credits and Y total credits"
+    *   Context-appropriate warning messages that prioritize impossible GPA notifications over credits issues
+
 ---
 
-This document should now be a stable reference point capturing the full requirements and logic as discussed, including the latest UI optimization changes.
+This document should now be a stable reference point capturing the full requirements and logic as discussed, including the latest UI optimization changes and GPA display formatting requirements.
 
 

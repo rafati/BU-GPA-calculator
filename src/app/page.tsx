@@ -12,8 +12,6 @@ import PrevGradeSelector from '../components/PrevGradeSelector'; // Import the n
 import GpaDisplay from '../components/GpaDisplay'; // Import the new component
 import SignOutButton from '@/components/SignOutButton';
 import GpaResultsCard from '@/components/GpaResultsCard';
-import PrintableReport from '@/components/PrintableReport';
-import '@/app/print.css';
 // Remove the duplicate line if it exists
 
 // Define the expected structure for a grade scale row
@@ -102,12 +100,7 @@ function HomePageContent() {
 
     // Add a function to handle printing
     const handlePrint = () => {
-        // Make sure print styles are applied
-        document.body.classList.add('printing');
         window.print();
-        setTimeout(() => {
-            document.body.classList.remove('printing');
-        }, 1000);
     };
 
     // --- State for Gradescale ---
@@ -2454,34 +2447,6 @@ function HomePageContent() {
                     )}
                 </main>
 
-                {/* Main calculator UI and GPA cards end here */}
-                
-                {/* PrintableReport component - hidden in normal view, only visible when printing */}
-                {session && studentDataStatus === 'success' && (
-                    <div className="hidden print:block">
-                        <PrintableReport 
-                            studentId={studentDataSource?.student?.DegStudentNo || ''}
-                            baseData={{
-                                overallCredits: editableBaseOverallCredits,
-                                overallPoints: editableBaseOverallPoints,
-                                // Calculate the GPA directly instead of using baseGPAInfo
-                                overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints), parseInt(editableBaseOverallCredits, 10)),
-                                majorCredits: editableBaseMajorCredits,
-                                majorPoints: editableBaseMajorPoints,
-                                // Calculate the major GPA directly
-                                majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints), parseInt(editableBaseMajorCredits, 10))
-                            }}
-                            semesterGPAInfo={semesterGPAInfo}
-                            projectedGPAInfo={projectedGPAInfo}
-                            targetOverallGPAInput={targetOverallGPAInput}
-                            targetMajorGPAInput={targetMajorGPAInput}
-                            requiredSemesterInfo={requiredSemesterInfo}
-                            plannerCourses={plannerCourses}
-                            disclaimerText={disclaimerText}
-                        />
-                    </div>
-                )}
-                
                 {/* Footer */}
                 <footer className="p-4 border-t text-center mt-8 space-y-2">
                     <p className="text-xs text-gray-600">{disclaimerText}</p>
