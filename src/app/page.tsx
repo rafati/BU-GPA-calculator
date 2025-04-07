@@ -11,6 +11,7 @@ import GradeSelector from '../components/GradeSelector'; // Import the new compo
 import PrevGradeSelector from '../components/PrevGradeSelector'; // Import the new component
 import GpaDisplay from '../components/GpaDisplay'; // Import the new component
 import SignOutButton from '@/components/SignOutButton';
+import GpaResultsCard from '@/components/GpaResultsCard';
 // Remove the duplicate line if it exists
 
 // Define the expected structure for a grade scale row
@@ -1030,7 +1031,15 @@ function HomePageContent() {
             if ((!hasOverallTarget && !hasMajorTarget) ||
                 gradeScaleStatus !== 'success' || gradeScale.length === 0)
             {
-                 return { overallDisplay: 'N/A', majorDisplay: 'N/A', status: 'waiting' };
+                 return { 
+                    overallDisplay: 'N/A', 
+                    majorDisplay: 'N/A', 
+                    status: 'waiting',
+                    isOverallImpossible: false,
+                    isMajorImpossible: false,
+                    finalCumulativeOverallCredits: 0,
+                    finalCumulativeMajorCredits: 0
+                 };
             }
 
 // --- Start Calculation Logic ---
@@ -1194,6 +1203,7 @@ function HomePageContent() {
             return {
                 overallDisplay: finalOverallDisplay,
                 majorDisplay: finalMajorDisplay,
+                status: 'calculated',
                 isOverallImpossible: isOverallImpossible,
                 isMajorImpossible: isMajorImpossible,
                 finalCumulativeOverallCredits: finalCumulativeOverallCredits,
@@ -2281,105 +2291,37 @@ function HomePageContent() {
                                     </div>
                                 </div>
                                 
-                                {/* GPA Summary Section - COMBINING BOTH RESULTS BOXES - Only show on desktop */}
-                                <div className="p-2 rounded-lg border bg-white shadow-sm hidden md:block">
-                                    <h2 className="text-sm font-medium text-bu-blue border-b pb-1 mb-2 flex items-center justify-between">
-                                        <span className="flex items-center">
-                                            <span className="mr-1">📊</span> 
-                                            GPA Results
-                                        </span>
-                                    </h2>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {/* Semester Results */}
-                                        <div className="space-y-1">
-                                            <h3 className="text-xs font-medium border-b border-gray-100 pb-1">Semester Planner</h3>
-                                            <div className="grid grid-cols-2 gap-1">
-                                                <div className="space-y-1 bg-gray-50 p-2 rounded">
-                                                    <div className="text-xs font-medium">Overall GPA</div>
-                                                    <p className="text-lg font-bold text-green-600">
-                                                        {semesterGPAInfo.overallGPA}
-                                                    </p>
-                                                    <div className="text-xs text-gray-600">
-                                                        Credits: {semesterGPAInfo.overallCredits.toFixed(1)}
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1 bg-gray-50 p-2 rounded">
-                                                    <div className="text-xs font-medium">Major GPA</div>
-                                                    <p className="text-lg font-bold text-green-600">
-                                                        {semesterGPAInfo.majorGPA}
-                                                    </p>
-                                                    <div className="text-xs text-gray-600">
-                                                        Credits: {semesterGPAInfo.majorCredits.toFixed(1)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-xs italic text-gray-700">
-                                                Includes only courses with GPA-affecting grades
-                                            </div>
-                                        </div>
-
-                                        {/* Projected Results */}
-                                        <div className="space-y-1">
-                                            <h3 className="text-xs font-medium border-b border-gray-100 pb-1">Projected Cumulative</h3>
-                                            <div className="grid grid-cols-2 gap-1">
-                                                <div className="space-y-1 bg-gray-50 p-2 rounded">
-                                                    <div className="text-xs font-medium">Overall GPA</div>
-                                                    <p className="text-lg font-bold text-bu-blue">
-                                                        {projectedGPAInfo.overallGPA}
-                                                    </p>
-                                                    <div className="text-xs text-gray-600">
-                                                        <span>Base: {calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)}</span>
-                                                        <span className="block">Credits: {projectedGPAInfo.finalOverallCredits.toFixed(1)}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1 bg-gray-50 p-2 rounded">
-                                                    <div className="text-xs font-medium">Major GPA</div>
-                                                    <p className="text-lg font-bold text-bu-blue">
-                                                        {projectedGPAInfo.majorGPA}
-                                                    </p>
-                                                    <div className="text-xs text-gray-600">
-                                                        <span>Base: {calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)}</span>
-                                                        <span className="block">Credits: {projectedGPAInfo.finalMajorCredits.toFixed(1)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-between items-center text-xs">
-                                                <span className="italic text-gray-700">
-                                                    Includes grade replacements for repeats
-                                                </span>
-                                                <Link
-                                                    href={{
-                                                        pathname: '/explanation',
-                                                        query: {
-                                                            bOC: parseInt(editableBaseOverallCredits, 10) || 0,
-                                                            bOP: parseFloat(editableBaseOverallPoints) || 0,
-                                                            bMC: parseInt(editableBaseMajorCredits, 10) || 0,
-                                                            bMP: parseFloat(editableBaseMajorPoints) || 0,
-                                                            planner: encodeURIComponent(JSON.stringify(plannerCourses)),
-                                                            scale: encodeURIComponent(JSON.stringify(gradeScale)),
-                                                            tO: parseFloat(targetOverallGPAInput) || 0,
-                                                            tM: parseFloat(targetMajorGPAInput) || 0,
-                                                            cOGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)),
-                                                            cMGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)),
-                                                            sOGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.overallGPA : 'N/A'),
-                                                            sMGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.majorGPA : 'N/A'),
-                                                            pOGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.overallGPA : 'N/A'),
-                                                            pMGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.majorGPA : 'N/A'),
-                                                            rODisplay: encodeURIComponent(requiredSemesterInfo.overallDisplay),
-                                                            rMDisplay: encodeURIComponent(requiredSemesterInfo.majorDisplay),
-                                                            sId: studentDataSource?.student?.DegStudentNo ?? null,
-                                                            bDN: studentDataSource?.student?.Note ?? null
-                                                        }
-                                                    }}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                >
-                                                    Details
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
+                                {/* Desktop GPA Results Card */}
+                                <div className="hidden md:block">
+                                  <GpaResultsCard 
+                                    semesterGPAInfo={semesterGPAInfo}
+                                    projectedGPAInfo={projectedGPAInfo}
+                                    requiredSemesterInfo={requiredSemesterInfo}
+                                    baseGPAInfo={{
+                                      overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0),
+                                      majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)
+                                    }}
+                                    shareParams={{
+                                      bOC: parseInt(editableBaseOverallCredits, 10) || 0,
+                                      bOP: parseFloat(editableBaseOverallPoints) || 0,
+                                      bMC: parseInt(editableBaseMajorCredits, 10) || 0,
+                                      bMP: parseFloat(editableBaseMajorPoints) || 0,
+                                      planner: encodeURIComponent(JSON.stringify(plannerCourses)),
+                                      scale: encodeURIComponent(JSON.stringify(gradeScale)),
+                                      tO: parseFloat(targetOverallGPAInput) || 0,
+                                      tM: parseFloat(targetMajorGPAInput) || 0,
+                                      cOGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)),
+                                      cMGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)),
+                                      sOGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.overallGPA : 'N/A'),
+                                      sMGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.majorGPA : 'N/A'),
+                                      pOGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.overallGPA : 'N/A'),
+                                      pMGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.majorGPA : 'N/A'),
+                                      rODisplay: encodeURIComponent(requiredSemesterInfo.overallDisplay),
+                                      rMDisplay: encodeURIComponent(requiredSemesterInfo.majorDisplay),
+                                      sId: studentDataSource?.student?.DegStudentNo ?? null,
+                                      bDN: studentDataSource?.student?.Note ?? null
+                                    }}
+                                  />
                                 </div>
 
                                 {/* Mobile Course List with compact design */}
@@ -2468,105 +2410,37 @@ function HomePageContent() {
                                     )}
                                 </div>
                                 
-                                {/* GPA Summary Section for Mobile - Below Course Planner */}
-                                <div className="p-2 rounded-lg border bg-white shadow-sm md:hidden mt-4">
-                                    <h2 className="text-sm font-medium text-bu-blue border-b pb-1 mb-2 flex items-center justify-between">
-                                        <span className="flex items-center">
-                                            <span className="mr-1">📊</span> 
-                                            GPA Results
-                                        </span>
-                                    </h2>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        {/* Semester Results */}
-                                        <div className="space-y-1">
-                                            <h3 className="text-xs font-medium border-b border-gray-100 pb-1">Semester Planner</h3>
-                                            <div className="grid grid-cols-2 gap-1">
-                                                <div className="space-y-1 bg-gray-50 p-2 rounded">
-                                                    <div className="text-xs font-medium">Overall GPA</div>
-                                                    <p className="text-lg font-bold text-green-600">
-                                                        {semesterGPAInfo.overallGPA}
-                                                    </p>
-                                                    <div className="text-xs text-gray-600">
-                                                        Credits: {semesterGPAInfo.overallCredits.toFixed(1)}
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1 bg-gray-50 p-2 rounded">
-                                                    <div className="text-xs font-medium">Major GPA</div>
-                                                    <p className="text-lg font-bold text-green-600">
-                                                        {semesterGPAInfo.majorGPA}
-                                                    </p>
-                                                    <div className="text-xs text-gray-600">
-                                                        Credits: {semesterGPAInfo.majorCredits.toFixed(1)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-xs italic text-gray-700">
-                                                Includes only courses with GPA-affecting grades
-                                            </div>
-                                        </div>
-
-                                        {/* Projected Results */}
-                                        <div className="space-y-1">
-                                            <h3 className="text-xs font-medium border-b border-gray-100 pb-1">Projected Cumulative</h3>
-                                            <div className="grid grid-cols-2 gap-1">
-                                                <div className="space-y-1 bg-gray-50 p-2 rounded">
-                                                    <div className="text-xs font-medium">Overall GPA</div>
-                                                    <p className="text-lg font-bold text-bu-blue">
-                                                        {projectedGPAInfo.overallGPA}
-                                                    </p>
-                                                    <div className="text-xs text-gray-600">
-                                                        <span>Base: {calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)}</span>
-                                                        <span className="block">Credits: {projectedGPAInfo.finalOverallCredits.toFixed(1)}</span>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1 bg-gray-50 p-2 rounded">
-                                                    <div className="text-xs font-medium">Major GPA</div>
-                                                    <p className="text-lg font-bold text-bu-blue">
-                                                        {projectedGPAInfo.majorGPA}
-                                                    </p>
-                                                    <div className="text-xs text-gray-600">
-                                                        <span>Base: {calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)}</span>
-                                                        <span className="block">Credits: {projectedGPAInfo.finalMajorCredits.toFixed(1)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-between items-center text-xs">
-                                                <span className="italic text-gray-700">
-                                                    Includes grade replacements for repeats
-                                                </span>
-                                                <Link
-                                                    href={{
-                                                        pathname: '/explanation',
-                                                        query: {
-                                                            bOC: parseInt(editableBaseOverallCredits, 10) || 0,
-                                                            bOP: parseFloat(editableBaseOverallPoints) || 0,
-                                                            bMC: parseInt(editableBaseMajorCredits, 10) || 0,
-                                                            bMP: parseFloat(editableBaseMajorPoints) || 0,
-                                                            planner: encodeURIComponent(JSON.stringify(plannerCourses)),
-                                                            scale: encodeURIComponent(JSON.stringify(gradeScale)),
-                                                            tO: parseFloat(targetOverallGPAInput) || 0,
-                                                            tM: parseFloat(targetMajorGPAInput) || 0,
-                                                            cOGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)),
-                                                            cMGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)),
-                                                            sOGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.overallGPA : 'N/A'),
-                                                            sMGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.majorGPA : 'N/A'),
-                                                            pOGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.overallGPA : 'N/A'),
-                                                            pMGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.majorGPA : 'N/A'),
-                                                            rODisplay: encodeURIComponent(requiredSemesterInfo.overallDisplay),
-                                                            rMDisplay: encodeURIComponent(requiredSemesterInfo.majorDisplay),
-                                                            sId: studentDataSource?.student?.DegStudentNo ?? null,
-                                                            bDN: studentDataSource?.student?.Note ?? null
-                                                        }
-                                                    }}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                >
-                                                    Details
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
+                                {/* Mobile GPA Results Card */}
+                                <div className="mt-4 md:hidden">
+                                  <GpaResultsCard 
+                                    semesterGPAInfo={semesterGPAInfo}
+                                    projectedGPAInfo={projectedGPAInfo}
+                                    requiredSemesterInfo={requiredSemesterInfo}
+                                    baseGPAInfo={{
+                                      overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0),
+                                      majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)
+                                    }}
+                                    shareParams={{
+                                      bOC: parseInt(editableBaseOverallCredits, 10) || 0,
+                                      bOP: parseFloat(editableBaseOverallPoints) || 0,
+                                      bMC: parseInt(editableBaseMajorCredits, 10) || 0,
+                                      bMP: parseFloat(editableBaseMajorPoints) || 0,
+                                      planner: encodeURIComponent(JSON.stringify(plannerCourses)),
+                                      scale: encodeURIComponent(JSON.stringify(gradeScale)),
+                                      tO: parseFloat(targetOverallGPAInput) || 0,
+                                      tM: parseFloat(targetMajorGPAInput) || 0,
+                                      cOGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)),
+                                      cMGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)),
+                                      sOGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.overallGPA : 'N/A'),
+                                      sMGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.majorGPA : 'N/A'),
+                                      pOGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.overallGPA : 'N/A'),
+                                      pMGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.majorGPA : 'N/A'),
+                                      rODisplay: encodeURIComponent(requiredSemesterInfo.overallDisplay),
+                                      rMDisplay: encodeURIComponent(requiredSemesterInfo.majorDisplay),
+                                      sId: studentDataSource?.student?.DegStudentNo ?? null,
+                                      bDN: studentDataSource?.student?.Note ?? null
+                                    }}
+                                  />
                                 </div>
                             </section>
                         </div>

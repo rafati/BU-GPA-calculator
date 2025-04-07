@@ -37,6 +37,7 @@ const PrevGradeSelector: React.FC<PrevGradeSelectorProps> = ({
     return (
         <select
             id={id}
+            name={id || "prev-grade-selector"}
             value={value ?? ''}
             onChange={handleChange}
             disabled={disabled}
@@ -45,7 +46,7 @@ const PrevGradeSelector: React.FC<PrevGradeSelectorProps> = ({
             className={`p-1 border rounded focus:ring-bu-blue focus:border-bu-blue text-sm ${className}`}
         >
             {/* Changed placeholder */}
-            <option value="">-- Select Prev. --</option>
+            <option value="">--</option>
             {validPrevGrades.map((gs) => (
                 <option key={`prev-grade-${gs.Grade}`} value={gs.Grade}>
                     {/* Display Grade ONLY */}

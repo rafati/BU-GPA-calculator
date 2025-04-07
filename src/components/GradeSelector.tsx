@@ -23,7 +23,7 @@ const GradeSelector: React.FC<GradeSelectorProps> = ({
     onChange,
     gradeScale,
     disabled = false,
-    placeholder = "-- Select Grade --",
+    placeholder = "--",
     id,
     className = "" // Default to empty string
 }) => {
@@ -35,6 +35,7 @@ const GradeSelector: React.FC<GradeSelectorProps> = ({
     return (
         <select
             id={id}
+            name={id || "grade-selector"} // Use id as name if available, otherwise use default
             value={value ?? ''} // Use empty string for null value to match placeholder option
             onChange={handleChange}
             disabled={disabled}
