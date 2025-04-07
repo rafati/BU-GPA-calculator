@@ -1,4 +1,18 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BU GPA Calculator
+
+A GPA calculator application for Bethlehem University students and advisors.
+
+## Features
+
+- Calculate semester GPA
+- Project cumulative GPA
+- Set target GPA and determine required semester performance
+- View GPA results in a mobile-friendly interface
+- Google authentication with account selection
+
+## Updated on
+<!-- Timestamp to trigger deployment -->
+Last update: May 13, 2024
 
 ## Getting Started
 
