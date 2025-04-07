@@ -1814,7 +1814,7 @@ function HomePageContent() {
                       {/* Display Sign Out Button if session exists (regardless of override) */}
                       {session && (
                           <button
-                              onClick={() => signOut()}
+                              onClick={() => signOut({ callbackUrl: "/" })}
                               className="px-4 py-1 text-sm text-gray-700 hover:text-red-600 rounded"
                           >
                               Sign Out
