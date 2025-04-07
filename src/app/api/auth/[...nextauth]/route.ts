@@ -18,6 +18,7 @@ export const authOptions = {
           access_type: "offline",
           response_type: "code",
           hd: "bethlehem.edu", // Enforces BU domain
+          prompt: "select_account", // Add this to force account selection
         },
       },
     }),
