@@ -12,6 +12,8 @@ import PrevGradeSelector from '../components/PrevGradeSelector'; // Import the n
 import GpaDisplay from '../components/GpaDisplay'; // Import the new component
 import SignOutButton from '@/components/SignOutButton';
 import GpaResultsCard from '@/components/GpaResultsCard';
+import { usePDFGenerator } from '../components/PDFGenerator';
+import { FaFilePdf } from 'react-icons/fa';
 // Remove the duplicate line if it exists
 
 // Define the expected structure for a grade scale row
@@ -101,6 +103,33 @@ function HomePageContent() {
     // Add a function to handle printing
     const handlePrint = () => {
         window.print();
+    };
+    
+    // Add PDF generation function
+    const handleGeneratePDF = () => {
+        // Use the disclaimer text fetched from the Google Sheet configuration
+        const { generatePDF } = usePDFGenerator({
+            studentId: displayedStudentId || '',
+            baseData: {
+                overallCredits: editableBaseOverallCredits,
+                overallPoints: editableBaseOverallPoints,
+                overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0),
+                majorCredits: editableBaseMajorCredits,
+                majorPoints: editableBaseMajorPoints,
+                majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)
+            },
+            semesterGPA: semesterGPAInfo,
+            projectedGPA: projectedGPAInfo,
+            targetGPA: {
+                overall: targetOverallGPAInput,
+                major: targetMajorGPAInput
+            },
+            requiredSemesterInfo,
+            courses: plannerCourses,
+            disclaimer: disclaimerText
+        });
+        
+        generatePDF();
     };
 
     // --- State for Gradescale ---
@@ -2094,9 +2123,16 @@ function HomePageContent() {
                                         {/* Print Button */}
                                         <button
                                             onClick={handlePrint}
-                                            className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs font-semibold"
+                                            className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs font-semibold flex items-center"
                                         >
-                                            Print
+                                            <span className="mr-1">🖨️</span> Print
+                                        </button>
+                                        {/* PDF Button */}
+                                        <button
+                                            onClick={handleGeneratePDF}
+                                            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-semibold flex items-center"
+                                        >
+                                            <FaFilePdf className="mr-1" /> PDF
                                         </button>
                                         {/* Share Button */}
                                         <button
