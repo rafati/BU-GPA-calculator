@@ -2,7 +2,7 @@
 
 import ClientWrapper from '@/components/ClientWrapper';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 // ... other imports
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -10,6 +10,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react"; // <-- UPDA
 import GradeSelector from '../components/GradeSelector'; // Import the new component
 import PrevGradeSelector from '../components/PrevGradeSelector'; // Import the new component
 import GpaDisplay from '../components/GpaDisplay'; // Import the new component
+import SignOutButton from '@/components/SignOutButton';
 // Remove the duplicate line if it exists
 
 // Define the expected structure for a grade scale row
@@ -87,6 +88,7 @@ function formatDate(date: Date): string {
 
 function HomePageContent() {
     const { data: session, status } = useSession();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const isShareLink = !!searchParams.get('data'); // Check if it's a share link
 
@@ -1465,6 +1467,12 @@ function HomePageContent() {
         );
     }
 
+    // Add this function for sign out
+    const handleSignOut = async () => {
+        await signOut({ callbackUrl: "/" });
+        router.push('/');
+    };
+
     // --- Main Authenticated View: Layout Fix for Footer ---
     return (
         // Flex column, min screen height
@@ -1813,12 +1821,7 @@ function HomePageContent() {
                       )}
                       {/* Display Sign Out Button if session exists (regardless of override) */}
                       {session && (
-                          <button
-                              onClick={() => signOut({ callbackUrl: "/" })}
-                              className="px-4 py-1 text-sm text-gray-700 hover:text-red-600 rounded"
-                          >
-                              Sign Out
-                             </button>
+                          <SignOutButton />
                      )}
                  </div>
                     {/* --- End Update --- */}

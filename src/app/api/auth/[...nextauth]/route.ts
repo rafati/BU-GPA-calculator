@@ -1,5 +1,7 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { Session } from "next-auth";
+import { JWT } from "next-auth/jwt";
 
 // Determine the correct NEXTAUTH_URL based on the environment
 const nextAuthUrl = process.env.NODE_ENV === 'production' 
@@ -24,6 +26,21 @@ export const authOptions = {
   session: {
     strategy: "jwt" as const,
     maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  callbacks: {
+    async session({ session, token }: { session: Session; token: JWT }) {
+      return session;
+    },
+    async jwt({ token, user, account }: { token: JWT; user?: any; account?: any }) {
+      if (user) {
+        token.user = user;
+      }
+      return token;
+    }
+  },
+  pages: {
+    signOut: '/',  // Redirect to home page after signout
+    error: '/auth/error', // Error code passed in query string as ?error=
   },
   cookies: {
     sessionToken: {
