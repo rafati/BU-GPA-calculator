@@ -271,6 +271,63 @@ This document should now be a stable reference point capturing the full requirem
         *   Handle connection management appropriately for serverless architecture
         *   Address authentication and authorization within the new database system
 
+*   **Usage Analytics & Tracking:**
+    *   **Implementation Strategy:**
+        *   During development: Use locally installed MySQL database for tracking
+        *   In production: Migrate to PlanetScale (MySQL-compatible) on Vercel
+        *   Use environment variables to switch connection strings based on environment
+        
+    *   **FR_TRACKING1: Key Events to Track:**
+        *   **Login Events:** Record each successful login to the application
+        *   **Student Data Loading:** Record when a student's data is loaded into the calculator
+        *   **Share Link Generation:** Track when users generate shareable links
+        *   **PDF Download Events:** Record when users download PDF reports
+        
+    *   **FR_TRACKING2: Analytics Data Schema:**
+        *   **Events Table:**
+            *   `id`: Unique identifier for the event record (auto-increment)
+            *   `session_id`: Unique identifier for the user session
+            *   `event_type`: Type of event (LOGIN, STUDENT_LOAD, SHARE, PDF_DOWNLOAD)
+            *   `user_email`: Email address of the authenticated user (if available)
+            *   `student_id`: Student ID being accessed (if applicable)
+            *   `timestamp`: Date and time when the event occurred (AUTO-POPULATED)
+            *   `browser`: Browser information (name, version)
+            *   `device_type`: Device category (desktop, tablet, mobile)
+            *   `os`: Operating system information
+            *   `ip_address`: Client IP address (stored in full form)
+            *   `referrer`: Source of traffic URL (if available)
+            *   `additional_data`: JSON field for event-specific details (optional)
+            
+    *   **FR_TRACKING3: Data Collection Policy:**
+        *   **Privacy-First Approach:** Collect only necessary information for usage analysis
+        *   **Data Minimization:** Limit collection to essential fields
+        *   **IP Tracking:** Store actual IP addresses for security and geographic analysis
+        *   **Retention Policy:** Establish clear timeframes for data retention
+        *   **Disclosure:** Inform users about data collection in privacy policy
+        
+    *   **FR_TRACKING4: Implementation Requirements:**
+        *   **Middleware-Based Approach:** Use Next.js middleware for login tracking
+        *   **API-Based Tracking:** Use API routes for client-side events to avoid Edge runtime limitations
+        *   **Session Consistency:** Maintain consistent session IDs across all related events
+        *   **Non-Blocking Design:** Ensure tracking code does not impact application performance
+        *   **Connection Pooling:** Use proper connection pooling for database operations
+        *   **Error Handling:** Gracefully handle tracking failures without disrupting user experience
+        *   **Validation:** Validate event types before inserting into database to prevent SQL errors
+        
+    *   **FR_TRACKING5: Administrative Interface:**
+        *   **Access Control:** Restricted to authorized administrators
+        *   **Dashboard:** Visual representation of usage statistics
+        *   **Filtering:** Ability to filter data by date range, event type, and other parameters
+        *   **Export:** Option to export analytics data in CSV format
+        *   **Summary Reports:** Automated periodic reports on usage patterns
+        
+    *   **FR_TRACKING6: Login Event Handling:**
+        *   **Authentication Integration:** Track logins through NextAuth signIn events
+        *   **Two-Phase Login Tracking:** 
+            *   Phase 1: Record initial login with device information via middleware
+            *   Phase 2: Update login record with user email after authentication via signIn event
+        *   **Login-Specific Fields:** Ensure browser, device type, OS, and IP data are accurately captured
+
 ---
 
 

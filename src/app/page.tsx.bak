@@ -2,20 +2,14 @@
 
 import ClientWrapper from '@/components/ClientWrapper';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 // ... other imports
 import { useSession, signIn, signOut } from "next-auth/react";
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"; // <-- UPDATED import line to include React and useRef
+import React, { useState, useEffect, useMemo, useRef } from "react"; // <-- UPDATED import line to include React and useRef
 import GradeSelector from '../components/GradeSelector'; // Import the new component
 import PrevGradeSelector from '../components/PrevGradeSelector'; // Import the new component
 import GpaDisplay from '../components/GpaDisplay'; // Import the new component
-import SignOutButton from '@/components/SignOutButton';
-import GpaResultsCard from '@/components/GpaResultsCard';
-import { usePDFGenerator, generatePDF } from '../components/PDFGenerator';
-import { FaFilePdf } from 'react-icons/fa';
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { FaPrint, FaTrash, FaUndoAlt, FaClipboardCheck, FaInfoCircle, FaArrowRight } from 'react-icons/fa';
 // Remove the duplicate line if it exists
 
 // Define the expected structure for a grade scale row
@@ -93,7 +87,6 @@ function formatDate(date: Date): string {
 
 function HomePageContent() {
     const { data: session, status } = useSession();
-    const router = useRouter();
     const searchParams = useSearchParams();
     const isShareLink = !!searchParams.get('data'); // Check if it's a share link
 
@@ -105,61 +98,6 @@ function HomePageContent() {
     // Add a function to handle printing
     const handlePrint = () => {
         window.print();
-    };
-    
-    // Add PDF generation function
-    const handleGeneratePDF = () => {
-        console.log("PDF generation started");
-        try {
-            // Call the non-hook version of the PDF generator
-            console.log("Calling generatePDF with data:", {
-                studentId: displayedStudentId || '',
-                baseData: {
-                    overallCredits: editableBaseOverallCredits,
-                    overallPoints: editableBaseOverallPoints,
-                    overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0),
-                    majorCredits: editableBaseMajorCredits,
-                    majorPoints: editableBaseMajorPoints,
-                    majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)
-                },
-                semesterGPA: semesterGPAInfo,
-                projectedGPA: projectedGPAInfo,
-                targetGPA: {
-                    overall: targetOverallGPAInput,
-                    major: targetMajorGPAInput
-                },
-                requiredSemesterInfo,
-                courses: plannerCourses,
-                disclaimer: disclaimerText
-            });
-            
-            generatePDF({
-                studentId: displayedStudentId || '',
-                baseData: {
-                    overallCredits: editableBaseOverallCredits,
-                    overallPoints: editableBaseOverallPoints,
-                    overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0),
-                    majorCredits: editableBaseMajorCredits,
-                    majorPoints: editableBaseMajorPoints,
-                    majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)
-                },
-                semesterGPA: semesterGPAInfo,
-                projectedGPA: projectedGPAInfo,
-                targetGPA: {
-                    overall: targetOverallGPAInput,
-                    major: targetMajorGPAInput
-                },
-                requiredSemesterInfo,
-                courses: plannerCourses,
-                disclaimer: disclaimerText
-            });
-            console.log("PDF generation completed successfully");
-            
-            // Track PDF download event
-            trackPdfDownload(displayedStudentId || undefined);
-        } catch (error) {
-            console.error("Error generating PDF:", error);
-        }
     };
 
     // --- State for Gradescale ---
@@ -206,12 +144,6 @@ function HomePageContent() {
     const [disclaimerText, setDisclaimerText] = useState<string>("Loading disclaimer...");
     // --- End State for Disclaimer ---
 
-    // --- State for Base Cumulative Data expansion ---
-    const [isBaseDataExpanded, setIsBaseDataExpanded] = useState<boolean>(true);
-    const [isTargetGPAExpanded, setIsTargetGPAExpanded] = useState<boolean>(true);
-    const [isMobileView, setIsMobileView] = useState<boolean>(false);
-    // --- End State for Base Cumulative Data expansion ---
-
     // --- State for Base URL (for Sharing) ---
     const [baseUrl, setBaseUrl] = useState<string | null>(null);
     const [baseUrlStatus, setBaseUrlStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -241,33 +173,6 @@ function HomePageContent() {
     // Add a loading state for student data loading
     const [isLoadingStudent, setIsLoadingStudent] = useState<boolean>(false);
 
-    // Add analytics tracking
-    const { trackLogin, trackStudentLoad, trackShare, trackPdfDownload } = useAnalytics();
-
-    // --- Effect to handle responsive behavior for Base Cumulative Data expansion ---
-    useEffect(() => {
-        // Function to check if we're in mobile view (less than 768px)
-        const checkMobileView = () => {
-            const isMobile = window.innerWidth < 768;
-            setIsMobileView(isMobile);
-            // Only auto-collapse on mobile view if it hasn't been manually toggled
-            if (!isLoadedFromShareLink) {
-                setIsBaseDataExpanded(!isMobile);
-                setIsTargetGPAExpanded(!isMobile);
-            }
-        };
-
-        // Initial check
-        checkMobileView();
-
-        // Add event listener for window resize
-        window.addEventListener('resize', checkMobileView);
-
-        // Cleanup
-        return () => window.removeEventListener('resize', checkMobileView);
-    }, [isLoadedFromShareLink]);
-    // --- End effect for responsive behavior ---
-
     // --- Effect for fetching data AND initializing editable base (AND Loading from Share Link) ---
     useEffect(() => {
         // --- Attempt to Load State from Share Link FIRST ---
@@ -292,23 +197,6 @@ function HomePageContent() {
                     setNextCustomCourseNumber( (sharedState.planner?.filter((c: PlannerCourse) => c.catalogKey.startsWith('Course '))?.length || 0) + 1);
                     setDisplayedStudentId(sharedState.sId || null); 
                     setBaseDataNote(sharedState.bDN || null); // <<< Load Note from share link (using bDN)
-                    
-                    // Consider mobile view when setting expansion state
-                    const isMobile = window.innerWidth < 768;
-                    if (sharedState.bDE !== undefined) {
-                        setIsBaseDataExpanded(sharedState.bDE);
-                    } else {
-                        setIsBaseDataExpanded(!isMobile);
-                    }
-                    
-                    // Handle Target GPAs expansion state
-                    if (sharedState.tGE !== undefined) {
-                        setIsTargetGPAExpanded(sharedState.tGE);
-                    } else {
-                        setIsTargetGPAExpanded(!isMobile);
-                    }
-                    
-                    setIsMobileView(isMobile);
 
                     setIsPlannerInitialized(true); // Mark planner as initialized
                     setIsLoadedFromShareLink(true); // Mark that we loaded from link
@@ -1093,15 +981,7 @@ function HomePageContent() {
             if ((!hasOverallTarget && !hasMajorTarget) ||
                 gradeScaleStatus !== 'success' || gradeScale.length === 0)
             {
-                 return { 
-                    overallDisplay: 'N/A', 
-                    majorDisplay: 'N/A', 
-                    status: 'waiting',
-                    isOverallImpossible: false,
-                    isMajorImpossible: false,
-                    finalCumulativeOverallCredits: 0,
-                    finalCumulativeMajorCredits: 0
-                 };
+                 return { overallDisplay: 'N/A', majorDisplay: 'N/A', status: 'waiting' };
             }
 
 // --- Start Calculation Logic ---
@@ -1265,7 +1145,6 @@ function HomePageContent() {
             return {
                 overallDisplay: finalOverallDisplay,
                 majorDisplay: finalMajorDisplay,
-                status: 'calculated',
                 isOverallImpossible: isOverallImpossible,
                 isMajorImpossible: isMajorImpossible,
                 finalCumulativeOverallCredits: finalCumulativeOverallCredits,
@@ -1306,9 +1185,7 @@ function HomePageContent() {
             tO: targetOverallGPAInput,
             tM: targetMajorGPAInput,
             sId: studentDataSource?.student?.DegStudentNo ?? null,
-            bDN: studentDataSource?.student?.Note ?? null, // <<< Add Note to share data (using bDN)
-            bDE: isBaseDataExpanded, // Add Base Data Expanded state
-            tGE: isTargetGPAExpanded // Add Target GPAs Expanded state
+            bDN: studentDataSource?.student?.Note ?? null // <<< Add Note to share data (using bDN)
         };
 
         try {
@@ -1333,10 +1210,6 @@ function HomePageContent() {
                 .then(() => {
                     console.log('Link copied to clipboard:', shareableLink);
                     setLinkCopied(true); // Set state to true for feedback
-                    
-                    // Track share event
-                    trackShare(displayedStudentId || undefined);
-                    
                     // Reset feedback after a few seconds
                     setTimeout(() => {
                         setLinkCopied(false);
@@ -1414,9 +1287,6 @@ function HomePageContent() {
                 setDisplayedStudentId(data.student.DegStudentNo);
                 setBaseDataNote(data.student.Note ?? null);
                 console.log("Student data initialized for", data.student.DegStudentNo);
-                
-                // Track student load event
-                trackStudentLoad(data.student.DegStudentNo);
             }
 
             // Initialize planner with the student's registrations
@@ -1452,10 +1322,6 @@ function HomePageContent() {
                 setInitialPlannerState([]);
                 setIsPlannerInitialized(true); // Still mark as initialized to prevent infinite loops
             }
-            
-            // Reset target GPA values to 2.0 when a student is selected
-            setTargetOverallGPAInput('2.0');
-            setTargetMajorGPAInput('2.0');
         } catch (error: any) {
             console.error("Error fetching selected student data:", error);
             setBaseDataNote(`Error: ${error.message || "Failed to load student data"}`);
@@ -1549,84 +1415,6 @@ function HomePageContent() {
                     </div>
         );
     }
-
-    // Add this function for sign out
-    const handleSignOut = async () => {
-        await signOut({ callbackUrl: "/" });
-        router.push('/');
-    };
-
-    // Add a new function to handle starting a blank calculator
-    const handleStartBlankCalculator = () => {
-        console.log("Starting blank calculator");
-        
-        // Mark loading state
-        setIsLoadingStudent(true);
-        
-        try {
-            // Reset all editable fields
-            setEditableBaseOverallCredits('0');
-            setEditableBaseOverallPoints('0');
-            setEditableBaseMajorCredits('0');
-            setEditableBaseMajorPoints('0');
-            
-            // Initialize base data
-            const baseData = {
-                overallCredits: 0,
-                overallPoints: 0,
-                majorCredits: 0,
-                majorPoints: 0
-            };
-            
-            setOriginalBaseData(baseData);
-            
-            // Set student info
-            setDisplayedStudentId('Blank Calculator');
-            setBaseDataNote('Using blank calculator with no pre-loaded student data.');
-            
-            // Create a default student record
-            const defaultStudentRecord: StudentRecord = {
-                DegStudentNo: 'Blank Calculator',
-                Email: session?.user?.email || 'Unknown',
-                DegCumActualCredits: 0,
-                DegCumPoints: 0,
-                DegCumMajorCredits: 0,
-                DegCumMajorPoints: 0,
-                Note: "Using blank calculator with no pre-loaded student data."
-            };
-            
-            // Create default data source with minimal properties
-            setStudentDataSource({
-                accessType: 'direct',
-                student: defaultStudentRecord,
-                registrations: [],
-                isOverride: false
-            });
-            
-            // Update app state
-            setAccessType('direct');
-            setIsFromAdvisorMode(true);
-            
-            // Initialize empty planner
-            setPlannerCourses([]);
-            setInitialPlannerState([]);
-            setIsPlannerInitialized(true);
-            
-            // Reset target GPA values to 2.0 for blank calculator
-            setTargetOverallGPAInput('2.0');
-            setTargetMajorGPAInput('2.0');
-            
-            console.log("Blank calculator initialized successfully");
-            
-            // Track as student load with 'blank' identifier
-            trackStudentLoad('blank-calculator');
-        } catch (error) {
-            console.error("Error initializing blank calculator:", error);
-        } finally {
-            // Always end loading state
-            setIsLoadingStudent(false);
-        }
-    };
 
     // --- Main Authenticated View: Layout Fix for Footer ---
     return (
@@ -1976,7 +1764,12 @@ function HomePageContent() {
                       )}
                       {/* Display Sign Out Button if session exists (regardless of override) */}
                       {session && (
-                          <SignOutButton />
+                          <button
+                              onClick={() => signOut()}
+                              className="px-4 py-1 text-sm text-gray-700 hover:text-red-600 rounded"
+                          >
+                              Sign Out
+                             </button>
                      )}
                  </div>
                     {/* --- End Update --- */}
@@ -2045,22 +1838,6 @@ function HomePageContent() {
                                     )}
                                 </button>
                                 
-                                {/* Add a divider */}
-                                <div className="flex items-center my-2">
-                                    <div className="flex-grow border-t border-gray-300"></div>
-                                    <span className="mx-2 text-xs text-gray-500">OR</span>
-                                    <div className="flex-grow border-t border-gray-300"></div>
-                                </div>
-                                
-                                {/* Add the "Start with Blank Calculator" button */}
-                                <button
-                                    onClick={handleStartBlankCalculator}
-                                    disabled={isLoadingStudent}
-                                    className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Start with Blank Calculator
-                                </button>
-                                
                                 {advisees && advisees.length > 0 && (
                                     <p className="text-xs text-gray-500 text-center">
                                         {advisees.length} students available. Search to find the one you need.
@@ -2096,101 +1873,104 @@ function HomePageContent() {
                                 {/* Base Data Section */}
                                 <div className="p-3 rounded-lg border bg-gray-100 shadow-sm space-y-2 text-xs">
                                     {/* Update Header to include Note */}
-                                    <h2 
-                                        className="text-md font-medium text-bu-blue border-b pb-1 mb-2 flex justify-between items-center cursor-pointer" 
-                                        onClick={() => setIsBaseDataExpanded(!isBaseDataExpanded)}
-                                        title={`Click to ${isBaseDataExpanded ? 'collapse' : 'expand'} Base Cumulative Data (${isMobileView ? 'Mobile view' : 'Desktop view'})`}
-                                    >
-                                        <span>Base Cumulative Data {baseDataNote ? `(${baseDataNote})` : ''}</span>
-                                        <span className="text-gray-500">{isBaseDataExpanded ? '▲' : '▼'}</span>
+                                    <h2 className="text-md font-medium text-bu-blue border-b pb-1 mb-2">
+                                        Base Cumulative Data {baseDataNote ? `(${baseDataNote})` : ''}
                                     </h2>
-                                    
-                                    {isBaseDataExpanded && (
-                                    <>
                                      {/* Current GPA Display */}
                                     <div className="flex justify-between items-center text-gray-700 font-medium">
                                          <span>Current Overall GPA:</span>
                                          <span>{calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)}</span>
-                                    </div>
+         </div>
                                      <div className="flex justify-between items-center text-gray-700 font-medium mb-2">
                                          <span>Current Major GPA:</span>
                                          <span>{calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)}</span>
                                     </div>
                                      {/* Inputs */}
                                       <div className="flex justify-between items-center text-gray-900">
-                                      <label htmlFor="base-overall-credits">Overall Credits:</label>
-                                      <input 
-                                        type="number" 
-                                        id="base-overall-credits"
-                                        name="base-overall-credits"
-                                        value={editableBaseOverallCredits} 
-                                        onChange={e => setEditableBaseOverallCredits(e.target.value)} 
-                                        className="p-1 border rounded w-24 focus:ring-bu-blue focus:border-bu-blue" 
-                                      />
+                                      <label>Overall Credits:</label>
+                                      <input type="number" value={editableBaseOverallCredits} onChange={e => setEditableBaseOverallCredits(e.target.value)} className="p-1 border rounded w-24 focus:ring-bu-blue focus:border-bu-blue" />
                                     </div>
                                      <div className="flex justify-between items-center text-gray-900">
-                                      <label htmlFor="base-overall-points">Overall Points:</label>
-                                      <input 
-                                        type="number" 
-                                        id="base-overall-points"
-                                        name="base-overall-points"
-                                        value={editableBaseOverallPoints} 
-                                        onChange={e => setEditableBaseOverallPoints(e.target.value)} 
-                                        className="p-1 border rounded w-24 focus:ring-bu-blue focus:border-bu-blue" 
-                                      />
+                                      <label>Overall Points:</label>
+                                      <input type="number" value={editableBaseOverallPoints} onChange={e => setEditableBaseOverallPoints(e.target.value)} className="p-1 border rounded w-24 focus:ring-bu-blue focus:border-bu-blue" />
                                     </div>
                                      <div className="flex justify-between items-center text-gray-900">
-                                       <label htmlFor="base-major-credits">Major Credits:</label>
-                                       <input 
-                                        type="number" 
-                                        id="base-major-credits"
-                                        name="base-major-credits"
-                                        value={editableBaseMajorCredits} 
-                                        onChange={e => setEditableBaseMajorCredits(e.target.value)} 
-                                        className="p-1 border rounded w-24 focus:ring-bu-blue focus:border-bu-blue" 
-                                       />
+                                       <label>Major Credits:</label>
+                                       <input type="number" value={editableBaseMajorCredits} onChange={e => setEditableBaseMajorCredits(e.target.value)} className="p-1 border rounded w-24 focus:ring-bu-blue focus:border-bu-blue" />
                                     </div>
                                      <div className="flex justify-between items-center text-gray-900">
-                                      <label htmlFor="base-major-points">Major Points:</label>
-                                      <input 
-                                        type="number" 
-                                        id="base-major-points"
-                                        name="base-major-points"
-                                        value={editableBaseMajorPoints} 
-                                        onChange={e => setEditableBaseMajorPoints(e.target.value)} 
-                                        className="p-1 border rounded w-24 focus:ring-bu-blue focus:border-bu-blue" 
-                                      />
+                                      <label>Major Points:</label>
+                                      <input type="number" value={editableBaseMajorPoints} onChange={e => setEditableBaseMajorPoints(e.target.value)} className="p-1 border rounded w-24 focus:ring-bu-blue focus:border-bu-blue" />
                                     </div>
                                      {/* Reset Button and Note - Aligned Horizontally */}
-                                     <div className="flex pt-2">
+                                     <div className="flex justify-between items-center pt-2">
                                         <p className="text-xs text-gray-500">Edit only if official data seems incorrect.</p>
+                                        <button onClick={handleResetBaseData} 
+                                           className="text-xs text-blue-600 hover:text-blue-800 hover:underline whitespace-nowrap"
+                                           >Reset Calculator</button>
                                     </div>
-                                    </>
-                                    )}
+                                </div>
+
+                                {/* Key Results Section - Use GpaDisplay */}
+                                <div className="p-4 rounded-lg border bg-white shadow-sm space-y-3 text-sm">
+                                    <h2 className="text-lg font-medium text-bu-blue border-b pb-2">Projected Results</h2>
+                                    <GpaDisplay 
+                                       label="Projected Overall GPA"
+                                       value={`${projectedGPAInfo.overallGPA} (${projectedGPAInfo.finalOverallCredits?.toFixed(1) ?? 0} total credits)`}
+                                    />
+                                    <GpaDisplay 
+                                       label="Projected Major GPA" 
+                                       value={`${projectedGPAInfo.majorGPA} (${projectedGPAInfo.finalMajorCredits?.toFixed(1) ?? 0} total major credits)`}
+                                    />
+                                    <GpaDisplay 
+                                       label="Semester Planner Overall GPA" 
+                                       value={`${semesterGPAInfo.overallGPA} (${semesterGPAInfo.overallCredits} GPA credits)`}
+                                    />
+                                    <GpaDisplay 
+                                       label="Semester Planner Major GPA" 
+                                       value={`${semesterGPAInfo.majorGPA} (${semesterGPAInfo.majorCredits} Major GPA credits)`}
+                                    />
+                                    
+                                    {/* Link to Explanation Page - Right align */}
+                                    <div className="pt-3 mt-3 border-t text-right">
+             <Link
+                 href={{
+                     pathname: '/explanation',
+                     query: {
+                         bOC: parseInt(editableBaseOverallCredits, 10) || 0,
+                                                bOP: parseFloat(editableBaseOverallPoints) || 0,
+                         bMC: parseInt(editableBaseMajorCredits, 10) || 0,
+                                                bMP: parseFloat(editableBaseMajorPoints) || 0,
+                         planner: encodeURIComponent(JSON.stringify(plannerCourses)),
+                         scale: encodeURIComponent(JSON.stringify(gradeScale)),
+                         tO: parseFloat(targetOverallGPAInput) || 0,
+                         tM: parseFloat(targetMajorGPAInput) || 0,
+                         cOGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)),
+                         cMGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)),
+                         sOGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.overallGPA : 'N/A'),
+                         sMGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.majorGPA : 'N/A'),
+                         pOGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.overallGPA : 'N/A'),
+                         pMGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.majorGPA : 'N/A'),
+                                                rODisplay: encodeURIComponent(requiredSemesterInfo.overallDisplay),
+                                                rMDisplay: encodeURIComponent(requiredSemesterInfo.majorDisplay),
+                                                sId: studentDataSource?.student?.DegStudentNo ?? null,
+                                                bDN: studentDataSource?.student?.Note ?? null
+                                            }
+                                        }}
+                                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+             >
+                 Show Calculation Details
+             </Link>
+        </div>
                                 </div>
 
                                 {/* Target Inputs Section - Use GpaDisplay for required */}
-                                <div className="p-3 rounded-lg border bg-gray-100 shadow-sm space-y-2 text-xs">
-                                    <h2 
-                                        className="text-md font-medium text-bu-blue border-b pb-1 mb-2 flex justify-between items-center cursor-pointer"
-                                        onClick={() => setIsTargetGPAExpanded(!isTargetGPAExpanded)}
-                                        title={`Click to ${isTargetGPAExpanded ? 'collapse' : 'expand'} Target GPAs (${isMobileView ? 'Mobile view' : 'Desktop view'})`}
-                                    >
-                                        <span>
-                                            Set Target GPAs
-                                            {!isTargetGPAExpanded && (
-                                                <span className="text-xs font-normal ml-1 text-gray-600">
-                                                    (CUM: {(parseFloat(targetOverallGPAInput) || 0).toFixed(2)}, Major: {(parseFloat(targetMajorGPAInput) || 0).toFixed(2)})
-                                                </span>
-                                            )}
-                                        </span>
-                                        <span className="text-gray-500">{isTargetGPAExpanded ? '▲' : '▼'}</span>
-                                    </h2>
-                                    
-                                    {isTargetGPAExpanded && (
-                                    <>
-                                    <div className="flex justify-between items-center text-gray-900">
-                                        <label htmlFor="targetOverall">Target Overall Cumulative GPA:</label>
+                                <div className="p-4 rounded-lg border bg-white shadow-sm space-y-3">
+                                    <h2 className="text-lg font-medium text-bu-blue border-b pb-2">Set Target GPAs</h2>
+                                    <div className="flex justify-between items-center">
+                                        <label htmlFor="targetOverall" className="block text-sm font-medium">Target Overall Cumulative GPA:</label>
                                         <input
                                             type="number"
                                             id="targetOverall"
@@ -2200,8 +1980,8 @@ function HomePageContent() {
                                             step="0.01" min="0" max="4"
                                         />
                                     </div>
-                                    <div className="flex justify-between items-center text-gray-900">
-                                        <label htmlFor="targetMajor">Target Major Cumulative GPA:</label>
+                                    <div className="flex justify-between items-center">
+                                        <label htmlFor="targetMajor" className="block text-sm font-medium">Target Major Cumulative GPA:</label>
                                         <input
                                             type="number"
                                             id="targetMajor"
@@ -2211,7 +1991,7 @@ function HomePageContent() {
                                             step="0.01" min="0" max="4"
                                         />
                                     </div>
-                                    <div className="pt-3 mt-3 border-t">
+                                    <div className="pt-3 mt-3 border-t text-sm">
                                          <h3 className="text-md font-medium text-bu-blue mb-1">Required Semester GPA</h3>
                                          <GpaDisplay 
                                            label="Overall"
@@ -2230,118 +2010,98 @@ function HomePageContent() {
                                             and {requiredSemesterInfo.finalCumulativeMajorCredits?.toFixed(1) ?? 0} final major credits)
                                           </p>
                                     </div>
-                                    </>
-                                    )}
                                 </div>
                             </section>
 
                             {/* Right Column */}
-                            <section className="lg:w-2/3 space-y-3">
-                                 {/* Planner Controls Section */}
-                                <div className="flex justify-between items-center mb-2">
+                            <section className="lg:w-2/3 space-y-6">
+                                {/* Planner Controls Section */}
+                                <div className="flex justify-between items-center mb-4">
                                     <div>
                                         <button
                                             onClick={handleAddCourse}
-                                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-xs font-semibold"
+                                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold"
                                         >
                                             Add Course
                                         </button>
                                     </div>
-                                    <div className="flex space-x-1">
+                                    <div className="flex space-x-2">
                                         <button
-                                            onClick={handleResetBaseData}
-                                            className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-xs font-semibold"
-                                        >Reset</button>
+                                            onClick={handleResetPlanner}
+                                            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm font-semibold"
+                                        >Reset Planner</button>
                                         {/* Print Button */}
                                         <button
                                             onClick={handlePrint}
-                                            className="px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-xs font-semibold flex items-center"
+                                            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-semibold"
                                         >
-                                            <span className="mr-1">🖨️</span> Print
-                                        </button>
-                                        {/* PDF Button */}
-                                        <button
-                                            onClick={handleGeneratePDF}
-                                            className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-semibold flex items-center"
-                                        >
-                                            <FaFilePdf className="mr-1" /> PDF
+                                            Print Calculator
                                         </button>
                                         {/* Share Button */}
                                         <button
                                             onClick={handleShare}
                                             disabled={baseUrlStatus !== 'success' || !baseUrl}
-                                            className="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed relative min-w-[70px] text-center"
+                                            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed relative min-w-[80px] text-center"
                                         >
                                             {/* Show "Copied!" temporarily */}
-                                            <span className={`transition-opacity duration-300 ${linkCopied ? 'opacity-0' : 'opacity-100'}`}>Share</span>
-                                            <span className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${linkCopied ? 'opacity-100' : 'opacity-0'}`}>Copied!</span>
+                                            <span className={`transition-opacity duration-300 ${linkCopied ? 'opacity-0' : 'opacity-100'}`}>Share Calculator</span>
+                                            <span className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${linkCopied ? 'opacity-100' : 'opacity-0'}`}>Link copied!</span>
                                         </button>
                                     </div>
                                 </div>
 
-                                {/* Course Planner List/Table: Minimal styling */}
-                                <div className="p-2 rounded-lg border bg-white shadow-sm">
-                                    {/* Mobile: Card List - HIDDEN in favor of our new compact version */}
-                                    <div className="hidden">
+                                {/* Course Planner List/Table */}
+                                <div className="p-4 rounded-lg border bg-white shadow-sm">
+                                    {/* Mobile: Card List */}
+                                    <div className="space-y-4 md:hidden">
                                        {plannerCourses.length > 0 ? plannerCourses.map(course => (
-                                           <div key={course.id} className="border rounded p-2 space-y-1">
+                                           <div key={course.id} className="border rounded p-3 space-y-2">
+                                               {/* Mobile Course Content */}
                                                <div className="flex justify-between items-center">
                                                  {/* Mobile CatalogKey Input */}
-                                                 <input type="text" value={course.catalogKey} onChange={e => handlePlannerChange(course.id, 'catalogKey', e.target.value)} placeholder="Course ID" className="p-1 border rounded w-32 mr-2 focus:ring-bu-blue focus:border-bu-blue text-xs font-medium" maxLength={10} />
-                                                 <button 
-                                                    onClick={() => handleRemoveCourse(course.id)} 
-                                                    className="p-1 bg-red-50 border border-red-200 rounded-full text-red-500 hover:text-red-700 hover:bg-red-100 flex-shrink-0 transition-all duration-200 hover:scale-110" 
-                                                    title="Remove course"
-                                                 >
-                                                    🗑️
-                                                 </button>
+                                                 <input type="text" value={course.catalogKey} onChange={e => handlePlannerChange(course.id, 'catalogKey', e.target.value)} placeholder="Course ID" className="p-1 border rounded w-32 mr-2 focus:ring-bu-blue focus:border-bu-blue text-sm font-medium" maxLength={10} />
+                                                 <button onClick={() => handleRemoveCourse(course.id)} className="text-red-500 text-xs hover:text-red-700 flex-shrink-0">Remove</button>
                                                </div>
                                                 <div className="flex items-center space-x-2">
-                                                   <label className="text-xs w-14">Credits:</label>
-                                                   <input 
-                                                    type="number" 
-                                                    name={`course-credits-${course.id}`}
-                                                    id={`course-credits-${course.id}`}
-                                                    value={course.credits} 
-                                                    onChange={e => handlePlannerChange(course.id, 'credits', parseInt(e.target.value) || 0)} 
-                                                    className="p-2 border rounded w-12 focus:ring-bu-blue focus:border-bu-blue text-sm" 
-                                                    min="0"
-                                                    max="99"
-                                                />
-                                                <GradeSelector
-                                                    id={`grade-select-mobile-${course.id}`}
-                                                    value={course.selectedGrade}
-                                                    onChange={(newGrade) => handlePlannerChange(course.id, 'selectedGrade', newGrade)}
-                                                    gradeScale={gradeScale}
-                                                    className="w-20 text-sm"
-                                                />
-                                               </div>
-                                                <div className="flex items-center space-x-4 text-xs">
+                                                   <label className="text-sm w-16">Credits:</label>
+                                                   <input type="number" value={course.credits} onChange={e => handlePlannerChange(course.id, 'credits', parseInt(e.target.value) || 0)} className="p-1 border rounded w-16 focus:ring-bu-blue focus:border-bu-blue" />
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                   <label htmlFor={`grade-select-mobile-${course.id}`} className="text-sm w-16">Grade:</label>
+                                                   <GradeSelector
+                                                       id={`grade-select-mobile-${course.id}`}
+                                                       value={course.selectedGrade}
+                                                       onChange={(newGrade) => handlePlannerChange(course.id, 'selectedGrade', newGrade)}
+                                                       gradeScale={gradeScale}
+                                                       className="flex-grow w-24"
+                                                   />
+                                                </div>
+                                                <div className="flex items-center space-x-4 pt-1 text-sm">
                                                    <label className="flex items-center">
-                                                     <input type="checkbox" checked={course.isMajor} onChange={e => handlePlannerChange(course.id, 'isMajor', e.target.checked)} className="h-3 w-3 text-bu-blue border-gray-300 rounded focus:ring-bu-blue mr-1" />
+                                                     <input type="checkbox" checked={course.isMajor} onChange={e => handlePlannerChange(course.id, 'isMajor', e.target.checked)} className="h-4 w-4 text-bu-blue border-gray-300 rounded focus:ring-bu-blue mr-1" />
                                                      Major?
                                                    </label>
                                                     <label className="flex items-center">
-                                                     <input type="checkbox" checked={course.isRepeat} onChange={e => handlePlannerChange(course.id, 'isRepeat', e.target.checked)} className="h-3 w-3 text-bu-blue border-gray-300 rounded focus:ring-bu-blue mr-1" />
+                                                     <input type="checkbox" checked={course.isRepeat} onChange={e => handlePlannerChange(course.id, 'isRepeat', e.target.checked)} className="h-4 w-4 text-bu-blue border-gray-300 rounded focus:ring-bu-blue mr-1" />
                                                      Repeat?
                                                    </label>
                                                 </div>
                                                 
                                                 {/* Conditionally render Previous Grade Selector */}
                                                 {course.isRepeat && (
-                                                    <div className="flex items-center mt-2">
-                                                        <span className="text-sm mr-2">Prev:</span>
+                                                    <div className="flex items-center space-x-2">
+                                                        <label htmlFor={`prev-grade-select-mobile-${course.id}`} className="text-sm w-16">Prev. Grade:</label>
                                                         <PrevGradeSelector 
                                                             id={`prev-grade-select-mobile-${course.id}`}
                                                             value={course.previousGrade}
                                                             onChange={(newPrevGrade) => handlePlannerChange(course.id, 'previousGrade', newPrevGrade)}
                                                             gradeScale={gradeScale}
-                                                            className="w-24 text-sm"
+                                                            className="flex-grow w-24"
                                                         />
                                                     </div>
                                                 )}
                                                </div>
-                                            )) : <p className="text-gray-500 text-center py-2 text-xs">No courses loaded or added yet.</p>}
+                                            )) : <p className="text-gray-500 text-center py-4">No courses loaded or added yet.</p>}
                                     </div>
 
                                     {/* Desktop: Table */}
@@ -2349,268 +2109,139 @@ function HomePageContent() {
                                         <table className="min-w-full divide-y">
                                             <thead className="bg-gray-50">
                                                 <tr>
-                                                    <th className="px-2 py-1 text-left text-xs font-medium uppercase tracking-wider">
-                                                        <label htmlFor="desk-course-id-header">Course</label>
-                                                    </th>
-                                                    <th className="px-2 py-1 text-left text-xs font-medium uppercase tracking-wider">
-                                                        <label htmlFor="desk-course-credits-header">Credits</label>
-                                                    </th>
-                                                    <th className="px-2 py-1 text-left text-xs font-medium uppercase tracking-wider">
-                                                        <label htmlFor="desk-grade-header">Grade</label>
-                                                    </th>
-                                                     <th className="px-2 py-1 text-center text-xs font-medium uppercase tracking-wider">
-                                                        <label htmlFor="desk-major-header">Major?</label>
-                                                     </th>
-                                                     <th className="px-2 py-1 text-center text-xs font-medium uppercase tracking-wider">
-                                                        <label htmlFor="desk-repeat-header">Repeat?</label>
-                                                     </th>
-                                                     <th className="px-2 py-1 text-left text-xs font-medium uppercase tracking-wider">
-                                                        <label htmlFor="desk-prev-header">Prev</label>
-                                                     </th>
-                                                    <th className="px-2 py-1 text-left text-xs font-medium uppercase tracking-wider"></th>
+                                                    <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Course</th>
+                                                    <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Credits</th>
+                                                    <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Grade</th>
+                                                     <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider">Major?</th>
+                                                     <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider">Repeat?</th>
+                                                     <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Prev. Grade</th>
+                                                    <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y text-xs">
+                                            <tbody className="divide-y">
                                                 {plannerCourses.length > 0 ? plannerCourses.map(course => (
                                                     <tr key={course.id}>
-                                                        <td className="px-2 py-1 whitespace-nowrap">
+                                                        {/* Desktop Course Content */}
+                                                        <td className="px-4 py-2 whitespace-nowrap text-sm">
                                                             {/* Desktop CatalogKey Input */}
-                                                            <input 
-                                                                type="text" 
-                                                                name={`desk-course-id-${course.id}`}
-                                                                id={`desk-course-id-${course.id}`}
-                                                                value={course.catalogKey} 
-                                                                onChange={e => handlePlannerChange(course.id, 'catalogKey', e.target.value)} 
-                                                                placeholder="Course ID" 
-                                                                className="p-1 border rounded w-24 focus:ring-bu-blue focus:border-bu-blue text-xs" 
-                                                                maxLength={10} 
-                                                            />
+                                                            <input type="text" value={course.catalogKey} onChange={e => handlePlannerChange(course.id, 'catalogKey', e.target.value)} placeholder="Course ID" className="p-1 border rounded w-28 focus:ring-bu-blue focus:border-bu-blue" maxLength={10} />
                                                         </td>
-                                                        <td className="px-2 py-1 whitespace-nowrap">
-                                                            <input 
-                                                                type="number" 
-                                                                name={`desk-course-credits-${course.id}`}
-                                                                id={`desk-course-credits-${course.id}`}
-                                                                value={course.credits} 
-                                                                onChange={e => handlePlannerChange(course.id, 'credits', parseInt(e.target.value) || 0)} 
-                                                                className="p-1 border rounded w-12 focus:ring-bu-blue focus:border-bu-blue text-xs" 
-                                                                min="0" 
-                                                                max="99" 
-                                                            />
+                                                        <td className="px-4 py-2 whitespace-nowrap text-sm">
+                                                            <input type="number" value={course.credits} onChange={e => handlePlannerChange(course.id, 'credits', parseInt(e.target.value) || 0)} className="p-1 border rounded w-16 focus:ring-bu-blue focus:border-bu-blue" />
                                                         </td>
-                                                        <td className="px-2 py-1 whitespace-nowrap">
+                                                        <td className="px-4 py-2 whitespace-nowrap text-sm">
                                                              <GradeSelector
-                                                                 id={`desk-grade-select-${course.id}`}
                                                                  value={course.selectedGrade}
                                                                  onChange={(newGrade) => handlePlannerChange(course.id, 'selectedGrade', newGrade)}
                                                                  gradeScale={gradeScale}
-                                                                 className="w-16 text-xs"
+                                                                 className="w-24"
                                                              />
                                                         </td>
-                                                        <td className="px-2 py-1 whitespace-nowrap text-center">
-                                                            <input 
-                                                                type="checkbox" 
-                                                                name={`desk-course-major-${course.id}`}
-                                                                id={`desk-course-major-${course.id}`}
-                                                                checked={course.isMajor} 
-                                                                onChange={e => handlePlannerChange(course.id, 'isMajor', e.target.checked)} 
-                                                                className="h-3 w-3 text-bu-blue border-gray-300 rounded focus:ring-bu-blue" 
-                                                            />
+                                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-center">
+                                                            <input type="checkbox" checked={course.isMajor} onChange={e => handlePlannerChange(course.id, 'isMajor', e.target.checked)} className="h-4 w-4 text-bu-blue border-gray-300 rounded focus:ring-bu-blue" />
                                                         </td>
-                                                        <td className="px-2 py-1 whitespace-nowrap text-center">
-                                                            <input 
-                                                                type="checkbox" 
-                                                                name={`desk-course-repeat-${course.id}`}
-                                                                id={`desk-course-repeat-${course.id}`}
-                                                                checked={course.isRepeat} 
-                                                                onChange={e => handlePlannerChange(course.id, 'isRepeat', e.target.checked)} 
-                                                                className="h-3 w-3 text-bu-blue border-gray-300 rounded focus:ring-bu-blue" 
-                                                            />
+                                                        <td className="px-4 py-2 whitespace-nowrap text-sm text-center">
+                                                            <input type="checkbox" checked={course.isRepeat} onChange={e => handlePlannerChange(course.id, 'isRepeat', e.target.checked)} className="h-4 w-4 text-bu-blue border-gray-300 rounded focus:ring-bu-blue" />
                                                         </td>
                                                          {/* Previous Grade Column */}
-                                                         <td className="px-2 py-1 whitespace-nowrap">
+                                                         <td className="px-4 py-2 whitespace-nowrap text-sm">
                                                             {/* Conditionally render Previous Grade Selector */}
                                                             {course.isRepeat && (
                                                                 <PrevGradeSelector 
-                                                                    id={`desk-prev-grade-select-${course.id}`}
                                                                     value={course.previousGrade}
                                                                     onChange={(newPrevGrade) => handlePlannerChange(course.id, 'previousGrade', newPrevGrade)}
                                                                     gradeScale={gradeScale}
-                                                                    className="w-16 text-xs"
+                                                                    className="w-24"
                                                                 />
                                                             )}
                                                         </td>
                                                         {/* Actions td */}
-                                                        <td className="px-2 py-1 whitespace-nowrap">
-                                                            <button 
-                                                                onClick={() => handleRemoveCourse(course.id)} 
-                                                                className="p-1 bg-red-50 border border-red-200 rounded-full text-red-500 hover:text-red-700 hover:bg-red-100 transition-all duration-200 hover:scale-110 text-xs" 
-                                                                title="Remove course"
-                                                            >
-                                                                🗑️
-                                                            </button>
+                                                        <td className="px-4 py-2 whitespace-nowrap text-sm">
+                                                            <button onClick={() => handleRemoveCourse(course.id)} className="text-red-500 hover:text-red-700">Remove</button>
                                                         </td>
                                                     </tr>
                                                  )) : (
-                                                    <tr><td colSpan={7} className="text-center py-2 text-gray-500 text-xs">No courses loaded or added yet.</td></tr>
+                                                    <tr><td colSpan={7} className="text-center py-4 text-gray-500">No courses loaded or added yet.</td></tr>
                                                  )}
                                             </tbody>
                                         </table>
                                     </div>
                                 </div>
                                 
-                                {/* Desktop GPA Results Card */}
-                                <div className="hidden md:block">
-                                  <GpaResultsCard 
-                                    semesterGPAInfo={semesterGPAInfo}
-                                    projectedGPAInfo={projectedGPAInfo}
-                                    requiredSemesterInfo={requiredSemesterInfo}
-                                    baseGPAInfo={{
-                                      overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0),
-                                      majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)
-                                    }}
-                                    shareParams={{
-                                      bOC: parseInt(editableBaseOverallCredits, 10) || 0,
-                                      bOP: parseFloat(editableBaseOverallPoints) || 0,
-                                      bMC: parseInt(editableBaseMajorCredits, 10) || 0,
-                                      bMP: parseFloat(editableBaseMajorPoints) || 0,
-                                      planner: encodeURIComponent(JSON.stringify(plannerCourses)),
-                                      scale: encodeURIComponent(JSON.stringify(gradeScale)),
-                                      tO: parseFloat(targetOverallGPAInput) || 0,
-                                      tM: parseFloat(targetMajorGPAInput) || 0,
-                                      cOGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)),
-                                      cMGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)),
-                                      sOGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.overallGPA : 'N/A'),
-                                      sMGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.majorGPA : 'N/A'),
-                                      pOGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.overallGPA : 'N/A'),
-                                      pMGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.majorGPA : 'N/A'),
-                                      rODisplay: encodeURIComponent(requiredSemesterInfo.overallDisplay),
-                                      rMDisplay: encodeURIComponent(requiredSemesterInfo.majorDisplay),
-                                      sId: studentDataSource?.student?.DegStudentNo ?? null,
-                                      bDN: studentDataSource?.student?.Note ?? null
-                                    }}
-                                  />
-                                </div>
-
-                                {/* Mobile Course List with compact design */}
-                                <div className="md:hidden mt-4">
-                                    {plannerCourses.length > 0 ? plannerCourses.map(course => (
-                                        <div key={course.id} className="border rounded p-3 mb-2 bg-white">
-                                            <div className="flex items-center gap-2 w-full">
-                                                <input 
-                                                    type="text" 
-                                                    name={`mobile-course-id-${course.id}`}
-                                                    id={`mobile-course-id-${course.id}`}
-                                                    value={course.catalogKey} 
-                                                    onChange={e => handlePlannerChange(course.id, 'catalogKey', e.target.value)} 
-                                                    placeholder="Course ID" 
-                                                    className="p-2 border rounded focus:ring-bu-blue focus:border-bu-blue text-sm flex-grow min-w-0" 
-                                                    maxLength={10} 
-                                                />
-                                                <input 
-                                                    type="number" 
-                                                    name={`mobile-course-credits-${course.id}`}
-                                                    id={`mobile-course-credits-${course.id}`}
-                                                    value={course.credits} 
-                                                    onChange={e => handlePlannerChange(course.id, 'credits', parseInt(e.target.value) || 0)} 
-                                                    className="p-2 border rounded w-12 focus:ring-bu-blue focus:border-bu-blue text-sm" 
-                                                    min="0"
-                                                    max="99"
-                                                />
-                                                <GradeSelector
-                                                    id={`mobile-grade-select-${course.id}`}
-                                                    value={course.selectedGrade}
-                                                    onChange={(newGrade) => handlePlannerChange(course.id, 'selectedGrade', newGrade)}
-                                                    gradeScale={gradeScale}
-                                                    className="w-20 text-sm"
-                                                />
-                                                <button 
-                                                    onClick={() => handleRemoveCourse(course.id)} 
-                                                    className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 hover:bg-gray-200 border text-gray-500"
-                                                    title="Remove course"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                            <div className="flex items-center mt-2">
-                                                <div className="flex items-center gap-4">
-                                                    <label className="flex items-center cursor-pointer" htmlFor={`mobile-course-major-${course.id}`}>
-                                                        <input 
-                                                            type="checkbox" 
-                                                            name={`mobile-course-major-${course.id}`}
-                                                            id={`mobile-course-major-${course.id}`}
-                                                            checked={course.isMajor} 
-                                                            onChange={e => handlePlannerChange(course.id, 'isMajor', e.target.checked)} 
-                                                            className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 mr-1" 
-                                                        />
-                                                        <span className="text-sm">Major</span>
-                                                    </label>
-                                                    <label className="flex items-center cursor-pointer" htmlFor={`mobile-course-repeat-${course.id}`}>
-                                                        <input 
-                                                            type="checkbox" 
-                                                            name={`mobile-course-repeat-${course.id}`}
-                                                            id={`mobile-course-repeat-${course.id}`}
-                                                            checked={course.isRepeat} 
-                                                            onChange={e => handlePlannerChange(course.id, 'isRepeat', e.target.checked)} 
-                                                            className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 mr-1" 
-                                                        />
-                                                        <span className="text-sm">Repeat</span>
-                                                    </label>
+                                {/* Projected Results Box */}
+                                <div className="p-4 rounded-lg border bg-white shadow-sm">
+                                    <h2 className="text-lg font-medium text-bu-blue border-b pb-2 mb-3">Projected Results</h2>
+                                    <div className="space-y-3">
+                                        {projectedGPAInfo.status === 'waiting' ? (
+                                            <p className="text-gray-500 italic">Waiting for data...</p>
+                                        ) : (
+                                            <>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <h3 className="text-md font-medium">Projected Overall</h3>
+                                                        <p className="text-2xl font-bold text-bu-blue">
+                                                            {projectedGPAInfo.overallGPA}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            Based on {projectedGPAInfo.finalOverallCredits.toFixed(1)} total credits
+                                                        </p>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <h3 className="text-md font-medium">Projected Major</h3>
+                                                        <p className="text-2xl font-bold text-bu-blue">
+                                                            {projectedGPAInfo.majorGPA}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600">
+                                                            Based on {projectedGPAInfo.finalMajorCredits.toFixed(1)} total credits
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            {course.isRepeat && (
-                                                <div className="flex items-center mt-2">
-                                                    <label htmlFor={`mobile-prev-grade-select-${course.id}`} className="text-sm mr-2">Prev:</label>
-                                                    <PrevGradeSelector 
-                                                        id={`mobile-prev-grade-select-${course.id}`}
-                                                        value={course.previousGrade}
-                                                        onChange={(newPrevGrade) => handlePlannerChange(course.id, 'previousGrade', newPrevGrade)}
-                                                        gradeScale={gradeScale}
-                                                        className="w-24 text-sm"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    )) : (
-                                        <p className="text-gray-500 text-center py-2 text-xs">No courses loaded or added yet.</p>
-                                    )}
-                                </div>
-                                
-                                {/* Mobile GPA Results Card */}
-                                <div className="mt-4 md:hidden">
-                                  <GpaResultsCard 
-                                    semesterGPAInfo={semesterGPAInfo}
-                                    projectedGPAInfo={projectedGPAInfo}
-                                    requiredSemesterInfo={requiredSemesterInfo}
-                                    baseGPAInfo={{
-                                      overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0),
-                                      majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)
-                                    }}
-                                    shareParams={{
-                                      bOC: parseInt(editableBaseOverallCredits, 10) || 0,
-                                      bOP: parseFloat(editableBaseOverallPoints) || 0,
-                                      bMC: parseInt(editableBaseMajorCredits, 10) || 0,
-                                      bMP: parseFloat(editableBaseMajorPoints) || 0,
-                                      planner: encodeURIComponent(JSON.stringify(plannerCourses)),
-                                      scale: encodeURIComponent(JSON.stringify(gradeScale)),
-                                      tO: parseFloat(targetOverallGPAInput) || 0,
-                                      tM: parseFloat(targetMajorGPAInput) || 0,
-                                      cOGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)),
-                                      cMGPA: encodeURIComponent(calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)),
-                                      sOGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.overallGPA : 'N/A'),
-                                      sMGPA: encodeURIComponent(semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.majorGPA : 'N/A'),
-                                      pOGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.overallGPA : 'N/A'),
-                                      pMGPA: encodeURIComponent(projectedGPAInfo.status === 'calculated' ? projectedGPAInfo.majorGPA : 'N/A'),
-                                      rODisplay: encodeURIComponent(requiredSemesterInfo.overallDisplay),
-                                      rMDisplay: encodeURIComponent(requiredSemesterInfo.majorDisplay),
-                                      sId: studentDataSource?.student?.DegStudentNo ?? null,
-                                      bDN: studentDataSource?.student?.Note ?? null
-                                    }}
-                                  />
+                                                <p className="text-xs text-gray-600 mt-2 italic">
+                                                    Projections include your base cumulative data plus all changes from your planner.
+                                                </p>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </section>
+                        </div>
+                        
+                        {/* Projected Results Box - Added below planner on right side */}
+                        <div className="mt-6">
+                            <div className="p-4 rounded-lg border bg-white shadow-sm">
+                                <h2 className="text-lg font-medium text-bu-blue border-b pb-2 mb-3">Projected Results</h2>
+                                <div className="space-y-3">
+                                    {projectedGPAInfo.status === 'waiting' ? (
+                                        <p className="text-gray-500 italic">Waiting for data...</p>
+                                    ) : (
+                                        <>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <h3 className="text-md font-medium">Projected Overall</h3>
+                                                    <p className="text-2xl font-bold text-bu-blue">
+                                                        {projectedGPAInfo.overallGPA}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Based on {projectedGPAInfo.finalOverallCredits.toFixed(1)} total credits
+                                                    </p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <h3 className="text-md font-medium">Projected Major</h3>
+                                                    <p className="text-2xl font-bold text-bu-blue">
+                                                        {projectedGPAInfo.majorGPA}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        Based on {projectedGPAInfo.finalMajorCredits.toFixed(1)} total credits
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-gray-600 mt-2 italic">
+                                                Projections include your base cumulative data plus all changes from your planner.
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
                 </main>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 // Define types for the props
 interface GpaResultsCardProps {
@@ -44,6 +45,21 @@ const GpaResultsCard: React.FC<GpaResultsCardProps> = ({
 }) => {
   // State for active tab
   const [activeTab, setActiveTab] = React.useState('semester');
+  
+  // Get analytics tracking functions
+  const analytics = useAnalytics();
+  
+  // Enhanced tab change handler with analytics
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Track tab change - Disabled to avoid SQL truncation errors
+    // analytics.trackEvent('GPA_TAB_CHANGE', { 
+    //   additionalData: { 
+    //     tab, 
+    //     studentId: shareParams?.studentId 
+    //   } 
+    // });
+  };
 
   // Function to format GPA to three decimal places
   const formatGPA = (gpaString: string): string => {
@@ -153,6 +169,12 @@ const GpaResultsCard: React.FC<GpaResultsCardProps> = ({
             className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              // Disabled to avoid SQL truncation errors
+              // analytics.trackEvent('GPA_EXPLANATION_VIEW', { 
+              //   additionalData: { studentId: shareParams?.studentId } 
+              // });
+            }}
           >
             Details
           </Link>
@@ -163,19 +185,19 @@ const GpaResultsCard: React.FC<GpaResultsCardProps> = ({
       <div className="flex border-b">
         <button 
           className={`flex-1 py-2 text-xs font-medium text-center transition-colors ${activeTab === 'semester' ? 'text-green-600 border-b-2 border-green-600 bg-green-50' : 'text-gray-600 hover:bg-gray-50'}`}
-          onClick={() => setActiveTab('semester')}
+          onClick={() => handleTabChange('semester')}
         >
           Semester
         </button>
         <button 
           className={`flex-1 py-2 text-xs font-medium text-center transition-colors ${activeTab === 'projected' ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`}
-          onClick={() => setActiveTab('projected')}
+          onClick={() => handleTabChange('projected')}
         >
           Projected
         </button>
         <button 
           className={`flex-1 py-2 text-xs font-medium text-center transition-colors ${activeTab === 'target' ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50' : 'text-gray-600 hover:bg-gray-50'}`}
-          onClick={() => setActiveTab('target')}
+          onClick={() => handleTabChange('target')}
         >
           Target
         </button>
@@ -259,9 +281,11 @@ const GpaResultsCard: React.FC<GpaResultsCardProps> = ({
                 }`}>
                   {extractGpaNumber(requiredSemesterInfo.overallDisplay).value}
                 </div>
-                <div className="text-xs text-gray-500 mt-1 text-center">
-                  Based on {extractSemesterCredits(requiredSemesterInfo.overallDisplay).semester} semester credits 
-                  <br />and {extractSemesterCredits(requiredSemesterInfo.overallDisplay).total} total credits
+                <div className="text-xs text-gray-500 mt-1">
+                  Based on {requiredSemesterInfo.finalCumulativeOverallCredits?.toFixed(1) ?? '0'} GPA credits
+                </div>
+                <div className="text-xs text-gray-500">
+                  Based on {extractSemesterCredits(requiredSemesterInfo.overallDisplay).semester} GPA credits
                 </div>
               </div>
               
@@ -274,9 +298,11 @@ const GpaResultsCard: React.FC<GpaResultsCardProps> = ({
                 }`}>
                   {extractGpaNumber(requiredSemesterInfo.majorDisplay).value}
                 </div>
-                <div className="text-xs text-gray-500 mt-1 text-center">
-                  Based on {extractSemesterCredits(requiredSemesterInfo.majorDisplay).semester} semester Major credits 
-                  <br />and {extractSemesterCredits(requiredSemesterInfo.majorDisplay).total} total Major credits
+                <div className="text-xs text-gray-500 mt-1">
+                  Based on {requiredSemesterInfo.finalCumulativeMajorCredits?.toFixed(1) ?? '0'} GPA credits
+                </div>
+                <div className="text-xs text-gray-500">
+                  Based on {extractSemesterCredits(requiredSemesterInfo.majorDisplay).semester} Major GPA credits
                 </div>
               </div>
             </div>

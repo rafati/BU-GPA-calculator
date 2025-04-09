@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Ensure favicons and other static files are properly served
+  output: 'standalone',
+  // Allow importing CSS files
+  webpack(config) {
+    return config;
+  },
   typescript: {
     ignoreBuildErrors: true
   },
