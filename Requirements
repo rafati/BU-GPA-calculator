@@ -215,4 +215,62 @@ Okay, here is a consolidated summary of the requirements for the Bethlehem Unive
 
 This document should now be a stable reference point capturing the full requirements and logic as discussed, including the latest UI optimization changes and GPA display formatting requirements.
 
+**9. Future Development Options**
+
+*   **Database Migration:**
+    *   **Current Implementation:** The application currently uses Google Sheets as its data source, which provides a familiar interface for administrators but has limitations in terms of scalability, query performance, and data validation.
+    *   **Migration Path:** For future development, the application could benefit from transitioning to a more robust database solution while maintaining the current functionality and user experience.
+    
+    *   **Recommended Database Options for Vercel Deployment:**
+        1.  **Vercel Storage Solutions:**
+            *   Vercel Postgres: SQL database with 256MB free tier storage
+            *   Vercel KV (Redis): Key-value store for caching and simple data
+            *   Vercel Blob: For storing larger objects and files
+            
+        2.  **PlanetScale:** MySQL-compatible serverless database
+            *   5GB free storage tier
+            *   Seamless Vercel integration
+            *   Branching workflow for development
+            *   Familiar SQL syntax
+            
+        3.  **MongoDB Atlas:** Document database
+            *   512MB free storage
+            *   Flexible schema similar to JSON
+            *   Good fit for migrating spreadsheet-like data
+            
+        4.  **Supabase:** Open-source Firebase alternative
+            *   PostgreSQL database with 500MB free storage
+            *   Built-in authentication that could replace Google Auth
+            *   Row-level security for complex access patterns
+            
+        5.  **Neon:** Serverless PostgreSQL
+            *   3GB free storage
+            *   Autoscaling capabilities
+            *   Branching for development environments
+    
+    *   **Development Strategy:**
+        1.  Start with locally installed MySQL/PostgreSQL during development
+        2.  Use environment variables to switch database connections based on environment
+        3.  Design database schema to match current data structure in Google Sheets
+        4.  Implement proper connection pooling for serverless environments
+        5.  Create data migration scripts to transfer data from Google Sheets
+        6.  Migrate to production database (e.g., PlanetScale) for deployment
+    
+    *   **Benefits of Database Migration:**
+        *   Improved performance for data queries
+        *   Better data validation and integrity enforcement
+        *   Enhanced security features and access control
+        *   Greater scalability for growing user base
+        *   Reduced dependency on Google services
+        *   Potential for more complex features requiring relational data
+        *   Support for transaction processing
+        
+    *   **Considerations:**
+        *   Maintain administrative interface that is user-friendly for non-technical staff
+        *   Ensure robust data backup and recovery procedures
+        *   Handle connection management appropriately for serverless architecture
+        *   Address authentication and authorization within the new database system
+
+---
+
 
