@@ -12,7 +12,7 @@ import PrevGradeSelector from '../components/PrevGradeSelector'; // Import the n
 import GpaDisplay from '../components/GpaDisplay'; // Import the new component
 import SignOutButton from '@/components/SignOutButton';
 import GpaResultsCard from '@/components/GpaResultsCard';
-import { usePDFGenerator } from '../components/PDFGenerator';
+import { usePDFGenerator, generatePDF } from '../components/PDFGenerator';
 import { FaFilePdf } from 'react-icons/fa';
 // Remove the duplicate line if it exists
 
@@ -107,8 +107,8 @@ function HomePageContent() {
     
     // Add PDF generation function
     const handleGeneratePDF = () => {
-        // Use the disclaimer text fetched from the Google Sheet configuration
-        const { generatePDF } = usePDFGenerator({
+        // Call the non-hook version of the PDF generator
+        generatePDF({
             studentId: displayedStudentId || '',
             baseData: {
                 overallCredits: editableBaseOverallCredits,
@@ -128,8 +128,6 @@ function HomePageContent() {
             courses: plannerCourses,
             disclaimer: disclaimerText
         });
-        
-        generatePDF();
     };
 
     // --- State for Gradescale ---
@@ -1512,6 +1510,71 @@ function HomePageContent() {
         router.push('/');
     };
 
+    // Add a new function to handle starting a blank calculator
+    const handleStartBlankCalculator = () => {
+        console.log("Starting blank calculator");
+        
+        // Mark loading state
+        setIsLoadingStudent(true);
+        
+        try {
+            // Reset all editable fields
+            setEditableBaseOverallCredits('0');
+            setEditableBaseOverallPoints('0');
+            setEditableBaseMajorCredits('0');
+            setEditableBaseMajorPoints('0');
+            
+            // Initialize base data
+            const baseData = {
+                overallCredits: 0,
+                overallPoints: 0,
+                majorCredits: 0,
+                majorPoints: 0
+            };
+            
+            setOriginalBaseData(baseData);
+            
+            // Set student info
+            setDisplayedStudentId('Blank Calculator');
+            setBaseDataNote('Using blank calculator with no pre-loaded student data.');
+            
+            // Create a default student record
+            const defaultStudentRecord: StudentRecord = {
+                DegStudentNo: 'Blank Calculator',
+                Email: session?.user?.email || 'Unknown',
+                DegCumActualCredits: 0,
+                DegCumPoints: 0,
+                DegCumMajorCredits: 0,
+                DegCumMajorPoints: 0,
+                Note: "Using blank calculator with no pre-loaded student data."
+            };
+            
+            // Create default data source with minimal properties
+            setStudentDataSource({
+                accessType: 'direct',
+                student: defaultStudentRecord,
+                registrations: [],
+                isOverride: false
+            });
+            
+            // Update app state
+            setAccessType('direct');
+            setIsFromAdvisorMode(true);
+            
+            // Initialize empty planner
+            setPlannerCourses([]);
+            setInitialPlannerState([]);
+            setIsPlannerInitialized(true);
+            
+            console.log("Blank calculator initialized successfully");
+        } catch (error) {
+            console.error("Error initializing blank calculator:", error);
+        } finally {
+            // Always end loading state
+            setIsLoadingStudent(false);
+        }
+    };
+
     // --- Main Authenticated View: Layout Fix for Footer ---
     return (
         // Flex column, min screen height
@@ -1927,6 +1990,22 @@ function HomePageContent() {
                                     ) : (
                                         "Load Student Data"
                                     )}
+                                </button>
+                                
+                                {/* Add a divider */}
+                                <div className="flex items-center my-2">
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                    <span className="mx-2 text-xs text-gray-500">OR</span>
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                </div>
+                                
+                                {/* Add the "Start with Blank Calculator" button */}
+                                <button
+                                    onClick={handleStartBlankCalculator}
+                                    disabled={isLoadingStudent}
+                                    className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Start with Blank Calculator
                                 </button>
                                 
                                 {advisees && advisees.length > 0 && (
