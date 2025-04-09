@@ -1410,6 +1410,10 @@ function HomePageContent() {
                 setInitialPlannerState([]);
                 setIsPlannerInitialized(true); // Still mark as initialized to prevent infinite loops
             }
+            
+            // Reset target GPA values to 2.0 when a student is selected
+            setTargetOverallGPAInput('2.0');
+            setTargetMajorGPAInput('2.0');
         } catch (error: any) {
             console.error("Error fetching selected student data:", error);
             setBaseDataNote(`Error: ${error.message || "Failed to load student data"}`);
@@ -1565,6 +1569,10 @@ function HomePageContent() {
             setPlannerCourses([]);
             setInitialPlannerState([]);
             setIsPlannerInitialized(true);
+            
+            // Reset target GPA values to 2.0 for blank calculator
+            setTargetOverallGPAInput('2.0');
+            setTargetMajorGPAInput('2.0');
             
             console.log("Blank calculator initialized successfully");
         } catch (error) {
