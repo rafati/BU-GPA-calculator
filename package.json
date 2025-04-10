@@ -1,12 +1,14 @@
 {
   "name": "my-gpa-app",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/update-build-number.js",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "update-version": "node scripts/update-build-number.js"
   },
   "dependencies": {
     "date-fns": "^4.1.0",

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css"; // Keep existing CSS import
 import "./print-styles.css"; // Add print styles
 import { SessionProvider } from "@/providers/SessionProvider"; // *** ADD THIS IMPORT ***
+import BuildInfo from "@/components/BuildInfo"; // Import BuildInfo component
 
 // Keep existing font setup
 const inter = Inter({
@@ -27,7 +28,14 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased`}>
         {/* *** WRAP CHILDREN WITH SESSIONPROVIDER *** */}
         <SessionProvider>
-          {children}
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-grow">
+              {children}
+            </main>
+            <footer className="py-2 px-4 text-center">
+              <BuildInfo />
+            </footer>
+          </div>
         </SessionProvider>
       </body>
     </html>
