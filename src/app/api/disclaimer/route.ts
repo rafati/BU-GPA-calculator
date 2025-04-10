@@ -21,7 +21,10 @@ async function getSheetsClient() {
         scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
     });
     const authClient = await auth.getClient();
-    return google.sheets({ version: 'v4', auth: authClient });
+    return google.sheets({ 
+        version: 'v4', 
+        auth: authClient as any 
+    });
 }
 // --- End Helper ---
 
@@ -36,7 +39,7 @@ export async function GET(request: Request) {
 
     // --- Define the sheet name and range for the disclaimer ---
     const sheetName = 'Configuration'; // Or AppSettings, whatever you named it
-    const range = `${sheetName}!B1`;    // Cell A2 contains the text
+    const range = `${sheetName}!B1`;    // Cell B1 contains the regular disclaimer text 
     // ---------------------------------------------------------
 
     try {
