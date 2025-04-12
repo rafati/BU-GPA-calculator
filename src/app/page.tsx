@@ -2016,7 +2016,7 @@ function HomePageContent() {
                             <div className="space-y-3">
                                 <div className="relative">
                                     <label htmlFor="advisee-input" className="block text-sm font-medium text-gray-700 mb-1">Search:</label>
-                     <input
+                                    <input
                                         id="advisee-input"
                                         type="text"
                                         value={studentIdInput}
@@ -2027,7 +2027,7 @@ function HomePageContent() {
                                     />
                                     
                                     {showSuggestions && (
-                                        <ul className="absolute z-10 w-full bg-white border rounded-b mt-1 max-h-60 overflow-auto shadow-md">
+                                        <ul className="absolute z-10 w-full bg-white border rounded-b mt-1 max-h-32 overflow-auto shadow-md">
                                             {filteredAdvisees.map((advisee, index) => (
                                                 <li 
                                                     key={`${advisee.studentId}-${index}`}
@@ -2040,6 +2040,24 @@ function HomePageContent() {
                                         </ul>
                                     )}
              </div>
+                                <div className="mt-1 mb-4">
+                                    {/* Fixed height container for suggestions */}
+                                    <div className="relative" style={{ minHeight: '120px' }}>
+                                        {showSuggestions && (
+                                            <ul className="absolute z-10 w-full bg-white border rounded-b shadow-md max-h-32 overflow-auto">
+                                                {filteredAdvisees.map((advisee, index) => (
+                                                    <li 
+                                                        key={`${advisee.studentId}-${index}`}
+                                                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                        onClick={() => handleSelectStudent(advisee.studentId)}
+                                                    >
+                                                        {advisee.studentId}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                </div>
                                 <button
                                     onClick={handleLoadSelectedStudent}
                                     disabled={!selectedValidStudentId || isLoadingStudent}
