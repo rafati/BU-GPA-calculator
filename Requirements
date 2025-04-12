@@ -1,5 +1,5 @@
 Okay, here is a consolidated summary of the requirements for the Bethlehem University GPA Calculator, reflecting all the logic discussions and decisions, particularly the final refined logic for the Target GPA calculation (based on v34). This document should serve as a comprehensive reference.
-Version 0.1.2
+Version 0.1.3
 
 **--- Consolidated Requirements: Bethlehem University GPA Calculator (v34 Logic) ---**
 
@@ -216,7 +216,52 @@ Version 0.1.2
 
 This document should now be a stable reference point capturing the full requirements and logic as discussed, including the latest UI optimization changes and GPA display formatting requirements.
 
-**9. Future Development Options**
+**9. Build Versioning System**
+
+*   **FR_BUILD1: Automatic Version Incrementing:**
+    *   The application uses semantic versioning (MAJOR.MINOR.PATCH) for tracking changes
+    *   The system automatically increments the PATCH version number (x.y.Z) when:
+        * The application is built for production via the `prebuild` npm script
+        * A developer manually runs the version update script
+        * A developer uses the provided `prepush` script before pushing to the repository
+    *   Version numbers are managed in multiple locations to ensure consistency:
+        * `package.json` file (primary source of version)
+        * `Requirements` file (updated automatically to match package.json)
+        * Environment variables for client and server access
+
+*   **FR_BUILD2: Build Information Tracking:**
+    *   The following information is captured with each build:
+        * Build version number (e.g., 0.1.2)
+        * Build date (YYYY-MM-DD format)
+        * Commit hash from Git (short form)
+    *   This information is stored in environment variables:
+        * Server-side: `BUILD_NUMBER`, `BUILD_DATE`, `COMMIT_HASH`
+        * Client-side: `NEXT_PUBLIC_BUILD_NUMBER`, `NEXT_PUBLIC_BUILD_DATE`, `NEXT_PUBLIC_COMMIT_HASH`
+
+*   **FR_BUILD3: Version Display:**
+    *   The application displays the current version number and build date in the footer of every page
+    *   The version display includes:
+        * Version number from package.json
+        * Build date in YYYY-MM-DD format
+    *   The version information is displayed in small, unobtrusive text that doesn't interfere with the primary functionality
+
+*   **FR_BUILD4: Development Tooling:**
+    *   Automated scripts to support version management:
+        * `update-build-number.js`: Increments the patch version and updates all relevant files
+        * `prepare-version-commit.js`: Stages changed files and prepares them for Git commit
+    *   NPM scripts to streamline the process:
+        * `npm run update-version`: Manually update version numbers
+        * `npm run prepush`: Update version and prepare for Git push
+        * `prebuild` (automatic): Update version before production builds
+
+*   **FR_BUILD5: Build Data Access:**
+    *   Build information is accessible throughout the application via:
+        * Environment variables in server-side code
+        * `NEXT_PUBLIC_` prefixed environment variables in client-side code
+        * A dedicated `buildInfo.ts` module that handles environment differences
+    *   The system handles hydration differences between server and client environments to prevent React errors
+
+**10. Future Development Options**
 
 *   **Database Migration:**
     *   **Current Implementation:** The application currently uses Google Sheets as its data source, which provides a familiar interface for administrators but has limitations in terms of scalability, query performance, and data validation.
