@@ -435,6 +435,21 @@ export const usePDFGenerator = ({
     // Fix the lastAutoTable property access issue
     const finalY = (doc as any).lastAutoTable?.finalY || courseY + 50;
     
+    // Add disclaimer text
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text('Disclaimer:', 15, finalY + 10);
+    
+    // Format and add the disclaimer text with wrapping
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    
+    // Split disclaimer text into multiple lines if it's too long
+    const disclaimerLines = doc.splitTextToSize(disclaimer, 175);
+    doc.text(disclaimerLines, 15, finalY + 15);
+    
     // Add page number at the bottom
     const pageCount = doc.getNumberOfPages();
     for(let i = 1; i <= pageCount; i++) {
@@ -879,6 +894,21 @@ export const generatePDF = (props: PDFGeneratorProps) => {
     
     // Fix the lastAutoTable property access issue
     const finalY = (doc as any).lastAutoTable?.finalY || courseY + 50;
+    
+    // Add disclaimer text
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text('Disclaimer:', 15, finalY + 10);
+    
+    // Format and add the disclaimer text with wrapping
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    
+    // Split disclaimer text into multiple lines if it's too long
+    const disclaimerLines = doc.splitTextToSize(disclaimer, 175);
+    doc.text(disclaimerLines, 15, finalY + 15);
     
     // Add page number at the bottom
     const pageCount = doc.getNumberOfPages();
