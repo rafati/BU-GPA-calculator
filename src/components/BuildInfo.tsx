@@ -8,22 +8,36 @@ interface BuildInfoProps {
 }
 
 export default function BuildInfo({ className = '' }: BuildInfoProps) {
-  const [buildNumber, setBuildNumber] = useState(buildInfo.buildNumber);
-  const [buildDate, setBuildDate] = useState(buildInfo.buildDate);
+  // To prevent hydration errors, start with empty values and populate on client only
+  const [isClient, setIsClient] = useState(false);
+  const [buildNumber, setBuildNumber] = useState('');
+  const [buildDate, setBuildDate] = useState('');
   
   useEffect(() => {
+    // We're on the client once this effect runs
+    setIsClient(true);
+    setBuildNumber(buildInfo.buildNumber);
+    
     // Format the date in a more readable format if needed
-    if (buildDate) {
+    if (buildInfo.buildDate) {
       try {
-        const date = new Date(buildDate);
+        const date = new Date(buildInfo.buildDate);
         if (!isNaN(date.getTime())) {
           setBuildDate(date.toLocaleDateString());
+        } else {
+          setBuildDate(buildInfo.buildDate);
         }
       } catch (e) {
         // Keep the original date if parsing fails
+        setBuildDate(buildInfo.buildDate);
       }
     }
-  }, [buildDate]);
+  }, []);
+
+  // Only render the actual content client-side to prevent hydration errors
+  if (!isClient) {
+    return <div className={`text-xs text-gray-500 ${className}`}></div>;
+  }
 
   return (
     <div className={`text-xs text-gray-500 ${className}`}>

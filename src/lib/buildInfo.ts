@@ -9,17 +9,19 @@ interface BuildInfo {
   commitHash?: string;
 }
 
-// Default values that will be replaced during build
+/**
+ * To avoid React hydration errors, we need to be careful to use the same value
+ * during server and client rendering. We'll prioritize the NEXT_PUBLIC_ variables.
+ */
 export const buildInfo: BuildInfo = {
-  buildNumber: typeof window !== 'undefined' 
-    ? (process.env.NEXT_PUBLIC_BUILD_NUMBER || '0.1.1') 
-    : (process.env.BUILD_NUMBER || '0.1.1'),
-  buildDate: typeof window !== 'undefined'
-    ? (process.env.NEXT_PUBLIC_BUILD_DATE || new Date().toISOString())
-    : (process.env.BUILD_DATE || new Date().toISOString()),
-  commitHash: typeof window !== 'undefined'
-    ? process.env.NEXT_PUBLIC_COMMIT_HASH
-    : process.env.COMMIT_HASH
+  // Use only the NEXT_PUBLIC version to avoid hydration mismatches
+  buildNumber: process.env.NEXT_PUBLIC_BUILD_NUMBER || '0.1.5',
+  
+  // Use only the NEXT_PUBLIC version to avoid hydration mismatches
+  buildDate: process.env.NEXT_PUBLIC_BUILD_DATE || new Date().toISOString(),
+  
+  // Use only the NEXT_PUBLIC version to avoid hydration mismatches
+  commitHash: process.env.NEXT_PUBLIC_COMMIT_HASH
 };
 
 export default buildInfo; 
