@@ -265,17 +265,28 @@ Version 0.1.9
     
     *   **FR_AI5: User Interface Integration:**
         *   **Access Point:** Provide a clearly visible button labeled "Get AI Recommendations" in the Target GPA section.
+        *   **Interface Design:**
+            * **Right Panel Layout:** Implement the AI interface in a collapsible panel that slides in from the right side of the screen.
+            * **Chatbot Interaction Model:** Design the interface to function like a conversational chatbot with:
+                * Chat message bubbles for both system messages and user inputs
+                * Visual distinction between AI-generated messages and user queries
+                * A message input field at the bottom for follow-up questions
+                * Typing indicators when the AI is generating a response
+                * Support for multi-turn conversations about academic planning
+            * **Persistent Availability:** Allow users to minimize/maximize the chat panel while continuing to use the calculator
         *   **Results Display:**
-            * Present AI recommendations in a dedicated modal or expandable panel
-            * Format the recommendations in an easy-to-read layout with clear headings
-            * Include a disclaimer about AI-generated content
-            * Provide action buttons to:
-                * Apply the recommended target GPA values
-                * Close the recommendations panel
+            * Present AI recommendations in chat message format with structured sections
+            * Format numeric recommendations (GPA targets, credit counts) to stand out visually
+            * Include a disclaimer about AI-generated content as the first message
+            * Provide action buttons within chat messages to:
+                * Apply the recommended target GPA values directly to the calculator
+                * Ask follow-up questions about specific recommendations
+                * Close or minimize the chat panel
         *   **Visual Design:**
-            * Use appropriate icons to distinguish AI-generated content
-            * Apply consistent styling with the rest of the application
-            * Employ color coding for emphasizing key values and recommendations
+            * Use a chat bubble design consistent with modern messaging applications
+            * Apply a distinct color scheme that complements but differentiates from the main calculator
+            * Include an AI assistant avatar/icon to create a more personalized experience
+            * Employ visual formatting (bold text, bullet points, etc.) to improve readability of recommendations
     
     *   **FR_AI6: Empty Planner Handling:**
         *   **Special Case Logic:** If the planner is empty (no courses added yet), the AI should:
