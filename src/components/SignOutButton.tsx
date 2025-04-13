@@ -4,13 +4,22 @@ import { useState } from 'react';
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-export default function SignOutButton() {
+interface SignOutButtonProps {
+  clearChatHistory?: () => void;
+}
+
+export default function SignOutButton({ clearChatHistory }: SignOutButtonProps) {
   const [isSigningOut, setIsSigningOut] = useState(false);
   const router = useRouter();
 
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
+      
+      // Clear chat history if the function is provided
+      if (clearChatHistory) {
+        clearChatHistory();
+      }
       
       // Clear browser storage
       sessionStorage.clear();

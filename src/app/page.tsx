@@ -15,8 +15,9 @@ import GpaResultsCard from '@/components/GpaResultsCard';
 import { usePDFGenerator, generatePDF } from '../components/PDFGenerator';
 import { FaFilePdf } from 'react-icons/fa';
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { FaPrint, FaTrash, FaUndoAlt, FaClipboardCheck, FaInfoCircle, FaArrowRight } from 'react-icons/fa';
+import { FaPrint, FaTrash, FaUndoAlt, FaClipboardCheck, FaInfoCircle, FaArrowRight, FaRobot } from 'react-icons/fa';
 import FeedbackButton from '@/components/FeedbackButton';
+import { AIAdvisor } from '@/components/ai';
 // Remove the duplicate line if it exists
 
 // Define the expected structure for a grade scale row
@@ -198,8 +199,22 @@ function HomePageContent() {
 
   
       // --- State for Target GPA ---
-      const [targetOverallGPAInput, setTargetOverallGPAInput] = useState<string>('2.0'); // Default to 2.0
-    const [targetMajorGPAInput, setTargetMajorGPAInput] = useState<string>('2.0');   // Default to 2.0
+      const [targetOverallGPAInput, setTargetOverallGPAInput] = useState<string>("2.0");
+      const [targetMajorGPAInput, setTargetMajorGPAInput] = useState<string>("2.0");
+      // --- End State for Target GPA ---
+      
+      // --- State for AI Advisor ---
+      const [isAIAdvisorOpen, setIsAIAdvisorOpen] = useState<boolean>(false);
+      const [aiChatHistory, setAiChatHistory] = useState<Array<{type: 'user' | 'ai', text: string}>>([]);
+      const [aiUserResponses, setAiUserResponses] = useState<Record<string, string>>({});
+      // --- End State for AI Advisor ---
+
+      // Add a function to clear AI chat history
+      const clearAiChatHistory = useCallback(() => {
+          setAiChatHistory([]);
+          setAiUserResponses({});
+      }, []);
+
       const [requiredSemesterGPA, setRequiredSemesterGPA] = useState<{ overall: string | number, major: string | number }>({ overall: 'N/A', major: 'N/A' });
       const [targetCalcStatus, setTargetCalcStatus] = useState<'idle' | 'calculated' | 'error' | 'impossible'>('idle');
       // --- End State for Target GPA ---
@@ -2109,7 +2124,7 @@ function HomePageContent() {
                       )}
                       {/* Display Sign Out Button if session exists (regardless of override) */}
                       {session && (
-                          <SignOutButton />
+                          <SignOutButton clearChatHistory={clearAiChatHistory} />
                      )}
                  </div>
                     {/* --- End Update --- */}
@@ -2416,6 +2431,13 @@ function HomePageContent() {
                                             className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-semibold flex items-center"
                                         >
                                             <FaFilePdf className="mr-1" /> PDF
+                                        </button>
+                                        {/* AI Advisor Button */}
+                                        <button
+                                            onClick={() => setIsAIAdvisorOpen(true)}
+                                            className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-xs font-semibold flex items-center"
+                                        >
+                                            <FaRobot className="mr-1" /> AI
                                         </button>
                                         {/* Share Button */}
                                         <button
@@ -2768,6 +2790,24 @@ function HomePageContent() {
 
                 {/* Add Feedback Button */}
                 <FeedbackButton studentId={displayedStudentId} />
+
+                {/* Add AI Advisor */}
+                <AIAdvisor 
+                    studentData={{
+                        overallGPA: Number(calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)),
+                        majorGPA: Number(calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)),
+                        overallCredits: parseInt(editableBaseOverallCredits, 10) || 0,
+                        majorCredits: parseInt(editableBaseMajorCredits, 10) || 0
+                    }}
+                    plannerData={plannerCourses}
+                    isOpen={isAIAdvisorOpen} 
+                    onClose={() => setIsAIAdvisorOpen(false)}
+                    chatHistory={aiChatHistory}
+                    setChatHistory={setAiChatHistory}
+                    userResponses={aiUserResponses}
+                    setUserResponses={setAiUserResponses}
+                    studentId={displayedStudentId}
+                />
 
                 {/* Footer */}
                 <footer className="p-4 border-t text-center mt-8 space-y-2">
