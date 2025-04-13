@@ -1,5 +1,5 @@
 Okay, here is a consolidated summary of the requirements for the Bethlehem University GPA Calculator, reflecting all the logic discussions and decisions, particularly the final refined logic for the Target GPA calculation (based on v34). This document should serve as a comprehensive reference.
-Version 0.1.8
+Version 0.1.9
 
 **--- Consolidated Requirements: Bethlehem University GPA Calculator (v34 Logic) ---**
 
@@ -189,6 +189,20 @@ Version 0.1.8
             * The special disclaimer text from cell C1 of the configuration sheet
             * "Page 1 of 1" displayed at the bottom right
         *   The entire output must fit on a single page regardless of the number of courses
+
+*   **User Feedback Collection:**
+    *   **FR_FEEDBACK1: Feedback Trigger:** Provide a clearly visible button or link (e.g., "Send Feedback") allowing users to initiate the feedback submission process.
+    *   **FR_FEEDBACK2: Feedback Form:** Present a simple modal or form with a text area for the user to type their feedback.
+    *   **FR_FEEDBACK3: Automatic Data Inclusion:** When submitting feedback:
+        *   Automatically capture and include the authenticated user's email address.
+        *   Automatically capture and include the currently selected Student ID (`DegStudentNo`), if one is loaded.
+        *   *(Optional/Stretch Goal)* Attempt to capture a screenshot of the current calculator interface state and include it with the feedback. Investigate feasibility using client-side libraries (e.g., html2canvas).
+    *   **FR_FEEDBACK4: Feedback Submission:**
+        *   Package the user's text feedback along with the automatically captured data (email, student ID, optional screenshot).
+        *   Send this package as an email *from* the application's Google Service Account address.
+        *   **Requires:** The Service Account must have Domain-Wide Delegation enabled in Google Workspace Admin with the `https://www.googleapis.com/auth/gmail.send` scope authorized.
+    *   **FR_FEEDBACK5: Configurable Recipient:** Read the target email address for receiving feedback from cell `B2` of the designated configuration Google Sheet.
+    *   **FR_FEEDBACK6: User Confirmation:** Provide visual confirmation to the user that their feedback has been sent successfully (e.g., a success message or toast notification). Handle potential sending errors gracefully.
 
 **5. Non-Functional Requirements**
 

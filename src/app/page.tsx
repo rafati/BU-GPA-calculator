@@ -16,6 +16,7 @@ import { usePDFGenerator, generatePDF } from '../components/PDFGenerator';
 import { FaFilePdf } from 'react-icons/fa';
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { FaPrint, FaTrash, FaUndoAlt, FaClipboardCheck, FaInfoCircle, FaArrowRight } from 'react-icons/fa';
+import FeedbackButton from '@/components/FeedbackButton';
 // Remove the duplicate line if it exists
 
 // Define the expected structure for a grade scale row
@@ -1644,7 +1645,7 @@ function HomePageContent() {
     // --- Main Authenticated View: Layout Fix for Footer ---
     return (
         // Flex column, min screen height
-        <div className="flex flex-col min-h-screen text-base">
+        <div id="root-container" className="flex flex-col min-h-screen text-base">
             {/* Add print styles */}
             <style jsx global>{`
                 /* Print-specific styles */
@@ -2764,6 +2765,9 @@ function HomePageContent() {
                         </div>
                     )}
                 </main>
+
+                {/* Add Feedback Button */}
+                <FeedbackButton studentId={displayedStudentId} />
 
                 {/* Footer */}
                 <footer className="p-4 border-t text-center mt-8 space-y-2">
