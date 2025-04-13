@@ -215,6 +215,98 @@ Version 0.1.9
         *   Display a success message to indicate successful submission.
         *   Close the feedback modal automatically after a short delay (2 seconds) following successful submission.
 
+*   **AI-Assisted GPA Targeting:**
+    *   **FR_AI1: AI-Powered GPA and Credit Recommendations:** 
+        *   Integrate an AI engine to analyze a student's current academic standing and provide personalized recommendations for:
+            * Optimal target semester GPA to achieve
+            * Number of credits (both total and major-specific) to register for
+            * Tailored strategies based on academic standing (e.g., avoid probation, improve GPA)
+    
+    *   **FR_AI2: AI Integration Approach:**
+        *   **Integration Pattern:** Implement a client-to-API architecture where the GPA calculator frontend prepares and sends contextual data to an AI service endpoint.
+        *   **AI Service Selection:** Use a Large Language Model service (e.g., OpenAI API, Azure OpenAI, or another suitable provider) capable of analyzing structured data and providing reasoning-based recommendations.
+        *   **Performance Requirements:** The AI service should respond within 2-3 seconds to maintain user engagement.
+    
+    *   **FR_AI3: Data Inputs for AI Prompting:**
+        *   **Student Academic Profile:**
+            * Current cumulative overall GPA and credits
+            * Current cumulative major GPA and credits
+            * Probation threshold GPA value (retrieved from configuration)
+            * Academic standing status (if available)
+            * Major/department information
+        *   **Current Planner State:**
+            * Number and type of courses currently in planner
+            * Credits distribution (total, major, GPA-affecting)
+        *   **Institutional Rules:**
+            * BU's GPA calculation rules summary
+            * Credit requirements for good standing
+            * Maximum credit load per semester allowed
+            * Repeat course policies
+        *   **Analysis Goals:**
+            * Avoid probation (if current GPA is near threshold)
+            * Reach next meaningful GPA milestone
+            * Optimize credit load for GPA improvement
+    
+    *   **FR_AI4: Output Requirements:**
+        *   **Recommendation Format:**
+            * Target Semester GPA: A specific, achievable GPA value expressed to three decimal places
+            * Credit Recommendations:
+                * Total credits to register for (as a whole number)
+                * Breakdown between major and non-major credits
+                * Rationale for the recommended credit distribution
+            * Strategies:
+                * Specific advice on course selection approach
+                * Guidance on whether to prioritize major or non-major courses
+                * Risk assessment of the recommended path
+        *   **Personalization Elements:**
+            * Recommendations must be tailored to the student's specific situation
+            * Different strategies for students at risk of probation vs. those in good standing
+            * Appropriate tone based on the academic situation (supportive for struggling students, encouraging for those doing well)
+    
+    *   **FR_AI5: User Interface Integration:**
+        *   **Access Point:** Provide a clearly visible button labeled "Get AI Recommendations" in the Target GPA section.
+        *   **Results Display:**
+            * Present AI recommendations in a dedicated modal or expandable panel
+            * Format the recommendations in an easy-to-read layout with clear headings
+            * Include a disclaimer about AI-generated content
+            * Provide action buttons to:
+                * Apply the recommended target GPA values
+                * Close the recommendations panel
+        *   **Visual Design:**
+            * Use appropriate icons to distinguish AI-generated content
+            * Apply consistent styling with the rest of the application
+            * Employ color coding for emphasizing key values and recommendations
+    
+    *   **FR_AI6: Empty Planner Handling:**
+        *   **Special Case Logic:** If the planner is empty (no courses added yet), the AI should:
+            * Focus on recommending a suitable credit load
+            * Suggest a credit distribution between major and non-major courses
+            * Provide GPA targets based solely on the student's cumulative data
+            * Acknowledge the empty planner state in its recommendations
+    
+    *   **FR_AI7: Prompt Engineering and Output Control:**
+        *   **Prompt Template:** Develop a structured prompt template with clear instructions and data formatting to ensure consistent AI responses.
+        *   **Response Verification:**
+            * Validate that numeric values returned by the AI are within reasonable ranges
+            * Ensure credit recommendations don't exceed institutional maximums
+            * Verify that GPA targets are achievable based on current standings
+        *   **Fallback Mechanisms:**
+            * Implement error handling for cases where AI recommendations can't be generated
+            * Provide pre-defined guidance if the AI service is unavailable
+    
+    *   **FR_AI8: Institutional Constraints and Rules:**
+        *   **Academic Policies:** Ensure the AI is informed about:
+            * Minimum GPA requirements for good academic standing (2.0 or as configured)
+            * Credit load limitations (minimum and maximum)
+            * Program-specific requirements if available
+        *   **Calculation Alignment:** AI recommendations must align with the same GPA calculation logic used in the core calculator.
+    
+    *   **FR_AI9: Privacy and Data Handling:**
+        *   **Data Minimization:** Only send necessary, de-identified information to the AI service.
+        *   **No Persistent Storage:** AI interactions should not persist student data beyond the session.
+        *   **Consent Mechanism:** Inform users that their academic data will be processed by an AI service and obtain appropriate consent.
+        *   **Compliance:** Ensure all AI processing complies with relevant education data privacy regulations.
+
 **5. Non-Functional Requirements**
 
 *   **NFR1: Accuracy:** Calculations must precisely implement BU rules.
@@ -472,5 +564,54 @@ This document should now be a stable reference point capturing the full requirem
         *   **Login-Specific Fields:** Ensure browser, device type, OS, and IP data are accurately captured
 
 ---
+
+**11. Development Workflow for AI Feature Integration**
+
+*   **Branching Strategy:**
+    *   **FR_DEV1: Production Stability:**
+        *   Maintain the `main` branch as the stable, production-ready version
+        *   All bug fixes and minor improvements continue on this branch
+        *   Production deployments are made exclusively from the `main` branch
+    
+    *   **FR_DEV2: Feature Branch for AI Development:**
+        *   Create a dedicated `feature/ai-recommendations` branch for AI functionality development
+        *   Branch should be created from a stable point in the `main` branch
+        *   Command reference: `git checkout -b feature/ai-recommendations`
+    
+    *   **FR_DEV3: Parallel Development Workflow:**
+        *   **Main Branch Work:**
+            * Bug fixes and critical updates continue on `main`
+            * Each fix should be properly committed with descriptive messages
+            * Regular deployments to production can continue uninterrupted
+        *   **Feature Branch Work:**
+            * AI recommendations feature development proceeds independently
+            * All new AI-related code remains isolated from production
+            * Regular commits document the feature development progress
+    
+    *   **FR_DEV4: Branch Synchronization:**
+        *   Periodically merge changes from `main` into the feature branch:
+            * `git checkout feature/ai-recommendations`
+            * `git merge main`
+        *   Resolve any merge conflicts to keep the feature branch updated
+        *   This ensures the feature branch includes all bug fixes and improvements
+    
+    *   **FR_DEV5: Feature Completion and Integration:**
+        *   When AI features are complete and tested:
+            1. Create a pull request from `feature/ai-recommendations` to `main`
+            2. Conduct thorough code review and testing
+            3. Merge the feature branch into `main` when approved
+            4. Deploy the updated `main` branch to production
+    
+    *   **FR_DEV6: Branch Management:**
+        *   Retain the feature branch until the AI functionality is stable in production
+        *   Consider creating version tags at significant development milestones
+        *   Document branch purpose and status in repository documentation
+
+*   **Benefits of this Development Approach:**
+    *   Isolates experimental AI code from production systems
+    *   Enables simultaneous bug fixing and feature development
+    *   Provides clear separation of concerns between maintenance and new features
+    *   Allows for thorough testing of AI features before production deployment
+    *   Maintains a consistent release cadence for critical updates
 
 
