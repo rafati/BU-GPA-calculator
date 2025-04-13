@@ -1649,7 +1649,6 @@ function HomePageContent() {
             <style jsx global>{`
                 /* Print-specific styles */
                 @media print {
-                    /* Hide screen-only elements */
                     .screen-only {
                         display: none !important;
                     }
@@ -1659,142 +1658,203 @@ function HomePageContent() {
                         display: block !important;
                     }
                     
-                    /* Basic page setup */
                     body {
-                        font-family: sans-serif;
-                        font-size: 9pt;
-                        line-height: 1.3;
-                        color: black;
-                        background: white;
-                        margin: 0; /* Remove default body margin */
-                    }
-                    
-                    @page {
-                        size: A4;
-                        margin: 1cm;
+                        font-family: Arial, sans-serif;
+                        font-size: 10pt;
+                        line-height: 1.4;
+                        color: #000;
+                        background: #fff;
+                        margin: 0;
+                        padding: 0;
                     }
                     
                     /* Print Header */
                     .print-header {
-                        display: flex !important;
-                        align-items: center !important;
-                        justify-content: space-between !important;
-                        margin-bottom: 0.5cm !important;
-                        padding-bottom: 0.2cm !important;
-                        border-bottom: 1px solid #ccc !important;
+                        display: flex;
+                        margin-bottom: 10px;
                     }
                     
                     .print-logo {
-                        height: 1.5cm !important; /* Adjust height as needed */
-                        width: auto !important;
-                        flex-shrink: 0;
+                        max-width: 200px;
+                        height: auto;
                     }
                     
                     .print-title-container {
-                        flex-grow: 1 !important;
-                        text-align: center !important;
+                        flex-grow: 1;
+                        margin-left: 10px;
                     }
                     
                     .print-main-title {
-                        font-size: 12pt !important;
-                        font-weight: bold !important;
+                        font-size: 16pt;
+                        font-weight: bold;
+                        color: #003366;
+                        margin-bottom: 8px;
                     }
                     
                     .print-student-id {
-                        font-size: 10pt !important;
-                        font-weight: bold !important;
-                        margin-top: 0.1cm !important;
+                        font-size: 12pt;
+                        font-weight: normal;
                     }
                     
-                    .print-logo-placeholder {
-                        width: 1.5cm; /* Match logo width or adjust for balance */
-                        height: 1.5cm;
-                        flex-shrink: 0;
+                    /* Student ID and Generated line with border */
+                    .print-id-line {
+                        display: flex;
+                        justify-content: space-between;
+                        margin: 10px 0 20px 0;
+                        border-bottom: 1px solid #800000;
+                        padding-bottom: 5px;
                     }
                     
-                    /* Three-column layout */
-                    .print-columns {
-                        display: flex !important;
-                        justify-content: space-between !important;
-                        width: 100% !important;
-                        margin-bottom: 0.5cm !important;
-                        border-bottom: 1px solid #ccc !important;
-                        padding-bottom: 0.3cm !important;
+                    .print-id-left {
+                        font-weight: bold;
                     }
                     
-                    .print-column {
-                        width: 31% !important; /* Adjust spacing if needed */
+                    .print-id-right {
+                        font-weight: normal;
+                    }
+                    
+                    /* Section styling */
+                    .print-section {
+                        margin-bottom: 20px;
                     }
                     
                     .print-section-heading {
-                        font-size: 10pt !important;
-                        font-weight: bold !important;
-                        margin-bottom: 0.2cm !important;
-                        padding-bottom: 0.1cm !important;
-                        border-bottom: 1px solid black !important;
+                        background-color: #f0f0f0;
+                        padding: 4px 8px;
+                        margin-bottom: 4px;
+                        font-weight: bold;
+                        color: #003366;
                     }
                     
                     .print-row {
-                        display: flex !important;
-                        justify-content: space-between !important;
-                        margin-bottom: 0.1cm !important;
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 3px 8px;
                     }
                     
                     .print-label {
-                        padding-right: 0.5cm !important;
+                        font-weight: bold;
                     }
                     
                     .print-value {
-                        font-weight: bold !important;
-                        text-align: right !important;
+                        text-align: right;
                     }
                     
                     .print-based-on {
-                        font-size: 7pt !important;
-                        font-style: italic !important;
-                        justify-content: flex-start !important; /* Align left */
-                        margin-top: 0.1cm !important;
+                        font-size: 8pt;
+                        color: #666;
+                        padding: 0 8px;
+                        font-style: italic;
                     }
                     
-                    /* Course list styling (Placeholder) */
+                    /* Course table styling */
                     .print-courses {
-                        margin-top: 0.5cm !important;
+                        margin: 25px 0;
+                    }
+                    
+                    .print-courses-heading {
+                        background-color: #f0f0f0;
+                        padding: 4px 8px;
+                        margin-bottom: 10px;
+                        font-weight: bold;
+                        color: #003366;
                     }
                     
                     .print-courses-table {
-                        width: 100% !important;
-                        border-collapse: collapse !important;
-                        font-size: 8pt !important;
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 9pt;
                     }
                     
                     .print-courses-th {
-                        background-color: #f0f0f0 !important;
-                        border: 1px solid #ddd !important;
-                        padding: 0.1cm 0.15cm !important;
-                        text-align: left !important;
-                        font-weight: bold !important;
+                        background-color: #f0f0f0;
+                        color: black;
+                        text-align: left;
+                        padding: 4px 6px;
+                        font-weight: bold;
+                        border: 1px solid #ddd;
                     }
                     
                     .print-courses-td {
-                        border: 1px solid #ddd !important;
-                        padding: 0.1cm 0.15cm !important;
-                        text-align: left !important;
+                        border: 1px solid #ddd;
+                        padding: 4px 6px;
+                        vertical-align: top;
                     }
                     
                     .print-courses-td.text-center {
-                        text-align: center !important;
+                        text-align: center;
                     }
                     
                     .print-courses-td.italic {
-                        font-style: italic !important;
-                        color: #666 !important;
+                        font-style: italic;
                     }
                     
-                    /* Footer */
+                    /* Footer styling */
                     .print-footer {
-                        margin-top: 0.5cm !important;
-                        border-top: 1px solid #ccc !important;
-                        padding-top: 0.2cm !important;
+                        margin-top: 30px;
+                        font-size: 8pt;
+                        color: #666;
+                        padding-top: 8px;
+                    }
+                    
+                    /* Match PDF appearance */
+                    .print-semester-gpa {
+                        color: #007800; /* Green for semester GPA */
+                        font-weight: bold;
+                    }
+                    
+                    .print-projected-gpa {
+                        color: #000096; /* Blue for projected GPA */
+                        font-weight: bold;
+                    }
+                    
+                    .print-required-gpa {
+                        color: #800080; /* Purple for target GPA */
+                        font-weight: bold;
+                    }
+                    
+                    .print-negative-value {
+                        color: #cc0000; /* Red for negative values */
+                    }
+                    
+                    /* Special disclaimer at the bottom */
+                    .print-disclaimer {
+                        color: #666;
+                        font-size: 9pt;
+                        margin-bottom: 10px;
+                    }
+                    
+                    /* Add PDF special disclaimer section */
+                    .print-pdf-disclaimer {
+                        color: #666;
+                        font-size: 9pt;
+                    }
+                    
+                    /* Page number */
+                    .print-page-number {
+                        text-align: right;
+                        font-size: 8pt;
+                        margin-top: 10px;
+                    }
+                    
+                    /* Layout grid */
+                    .print-layout {
+                        width: 100%;
+                    }
+                    
+                    .print-row-flex {
+                        display: flex;
+                        width: 100%;
+                        gap: 15px;
+                        margin-bottom: 15px;
+                    }
+                    
+                    .print-col-1-2 {
+                        flex: 1;
+                    }
+                    
+                    .print-col-1-1 {
+                        flex: 1;
                     }
                 }
             `}</style>
@@ -1805,157 +1865,216 @@ function HomePageContent() {
                 <div className="print-header">
                     <img src="/registrarbanner.png" alt="Bethlehem University Logo" className="print-logo" />
                     <div className="print-title-container">
-                        <div className="print-main-title">Bethlehem University GPA Calculator</div>
-                        {displayedStudentId && <div className="print-student-id">Student ID: {displayedStudentId}</div>}
+                        <div className="print-main-title">GPA Calculator Report</div>
+                        <div className="print-student-id">Student ID: {displayedStudentId || 'N/A'}</div>
                     </div>
-                    {/* Add a placeholder div to balance the flex layout if needed, or adjust justify-content */}
-                    <div className="print-logo-placeholder"></div> 
                 </div>
 
-                {/* Three-column layout for the main data sections */}
-                <div className="print-columns">
-                    {/* Column 1: Base Cumulative Data */}
-                    <div className="print-column">
-                        <div className="print-section-heading">Base Cumulative Data</div>
-                        <div className="print-row">
-                            <span className="print-label">Overall Credits:</span>
-                            <span className="print-value">{editableBaseOverallCredits}</span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Overall Points:</span>
-                            <span className="print-value">{editableBaseOverallPoints}</span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Overall GPA:</span>
-                            <span className="print-value">{/* Apply Points/10 logic */}
-                                {calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)}
-                            </span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Major Credits:</span>
-                            <span className="print-value">{editableBaseMajorCredits}</span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Major Points:</span>
-                            <span className="print-value">{editableBaseMajorPoints}</span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Major GPA:</span>
-                            <span className="print-value">{/* Apply Points/10 logic */}
-                                {calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    {/* Column 2: Projected Results */}
-                    <div className="print-column">
-                        <div className="print-section-heading">Projected Results</div>
-                        <div className="print-row">
-                            <span className="print-label">Semester Overall GPA:</span>
-                            <span className="print-value">{semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.overallGPA : 'N/A'}</span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Semester Credits:</span>
-                            <span className="print-value">{semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.overallCredits : '0'}</span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Semester Major GPA:</span>
-                            <span className="print-value">{semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.majorGPA : 'N/A'}</span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Semester Major Credits:</span>
-                            <span className="print-value">{semesterGPAInfo.status === 'calculated' ? semesterGPAInfo.majorCredits : '0'}</span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Projected Overall GPA:</span>
-                            <span className="print-value">{/* Add Credits */}
-                                {projectedGPAInfo.status === 'calculated' 
-                                    ? `${projectedGPAInfo.overallGPA} (${projectedGPAInfo.finalOverallCredits} credits)` 
-                                    : 'N/A'}
-                            </span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Projected Major GPA:</span>
-                            <span className="print-value">{/* Add Credits */}
-                                 {projectedGPAInfo.status === 'calculated' 
-                                    ? `${projectedGPAInfo.majorGPA} (${projectedGPAInfo.finalMajorCredits} credits)` 
-                                    : 'N/A'}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    {/* Column 3: Target GPAs */}
-                    <div className="print-column">
-                        <div className="print-section-heading">Target GPAs</div>
-                        <div className="print-row">
-                            <span className="print-label">Target Overall GPA:</span>
-                            <span className="print-value">{targetOverallGPAInput}</span>
-                        </div>
-                        <div className="print-row">
-                            <span className="print-label">Target Major GPA:</span>
-                            <span className="print-value">{targetMajorGPAInput}</span>
+                {/* Student ID and Generated timestamp with horizontal line below */}
+                <div className="print-id-line">
+                    <div className="print-id-left">Student ID: {displayedStudentId || 'N/A'}</div>
+                    <div className="print-id-right">Generated: {formatDate(new Date())}</div>
+                </div>
+
+                {/* Layout Grid */}
+                <div className="print-layout">
+                    {/* Top Row with Base Cumulative Data and Current Semester */}
+                    <div className="print-row-flex">
+                        {/* Base Cumulative Data */}
+                        <div className="print-col-1-2">
+                            <div className="print-section">
+                                <div className="print-section-heading">Base Cumulative Data</div>
+                                <div className="print-row">
+                                    <span className="print-label">Overall Credits:</span>
+                                    <span className="print-value">{Math.round(parseFloat(editableBaseOverallCredits) || 0)}</span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Overall Points:</span>
+                                    <span className="print-value">{parseFloat(editableBaseOverallPoints).toFixed(1)}</span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Overall GPA:</span>
+                                    <span className="print-value">
+                                        {calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0)}
+                                    </span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Major Credits:</span>
+                                    <span className="print-value">{Math.round(parseFloat(editableBaseMajorCredits) || 0)}</span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Major Points:</span>
+                                    <span className="print-value">{parseFloat(editableBaseMajorPoints).toFixed(1)}</span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Major GPA:</span>
+                                    <span className="print-value">
+                                        {calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                         
-                        {/* Required Semester GPA Sub-section */}
-                        <div style={{ marginTop: "0.5cm" }}> 
-                            <div className="print-section-heading">Required Semester GPA</div>
-                            <div className="print-row">
-                                <span className="print-label">Overall:</span>
-                                {/* Use requiredSemesterInfo for display */}
-                                <span className="print-value">{requiredSemesterInfo.overallDisplay}</span> 
-                            </div>
-                            <div className="print-row">
-                                <span className="print-label">Major:</span>
-                                 {/* Use requiredSemesterInfo for display */}
-                                <span className="print-value">{requiredSemesterInfo.majorDisplay}</span>
-                            </div>
-                            {projectedGPAInfo.status === 'calculated' && (
-                                <div className="print-row print-based-on">
-                                    {/* Note: This 'Based on' refers to the credits used for *target* calculation, which are already included in the overall/major display strings from requiredSemesterInfo */}
+                        {/* Current Semester */}
+                        <div className="print-col-1-2">
+                            <div className="print-section">
+                                <div className="print-section-heading">Current Semester</div>
+                                <div className="print-row">
+                                    <span className="print-label">Overall GPA:</span>
+                                    <span className={`print-value print-semester-gpa ${parseFloat(semesterGPAInfo.overallGPA || "0") < 0 ? "print-negative-value" : ""}`}>
+                                        {semesterGPAInfo.status === 'calculated' ? parseFloat(semesterGPAInfo.overallGPA).toFixed(3) : '0.000'}
+                                    </span>
                                 </div>
-                            )}
+                                <div className="print-row">
+                                    <span className="print-label">Credits:</span>
+                                    <span className="print-value">
+                                        {semesterGPAInfo.status === 'calculated' ? Math.round(semesterGPAInfo.overallCredits) : '0'}
+                                    </span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Major GPA:</span>
+                                    <span className={`print-value print-semester-gpa ${parseFloat(semesterGPAInfo.majorGPA || "0") < 0 ? "print-negative-value" : ""}`}>
+                                        {semesterGPAInfo.status === 'calculated' ? parseFloat(semesterGPAInfo.majorGPA).toFixed(3) : '0.000'}
+                                    </span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Credits:</span>
+                                    <span className="print-value">
+                                        {semesterGPAInfo.status === 'calculated' ? Math.round(semesterGPAInfo.majorCredits) : '0'}
+                                    </span>
+                                </div>
+                                
+                                {/* Projected Cumulative section */}
+                                <div className="print-section-heading" style={{ marginTop: '15px' }}>Projected Cumulative</div>
+                                <div className="print-row">
+                                    <span className="print-label">Overall GPA:</span>
+                                    <span className={`print-value print-projected-gpa ${parseFloat(projectedGPAInfo.overallGPA || "0") < 0 ? "print-negative-value" : ""}`}>
+                                        {projectedGPAInfo.status === 'calculated' ? parseFloat(projectedGPAInfo.overallGPA).toFixed(3) : '0.000'}
+                                    </span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Credits:</span>
+                                    <span className="print-value">
+                                        {projectedGPAInfo.status === 'calculated' ? Math.round(projectedGPAInfo.finalOverallCredits) : '0'}
+                                    </span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Major GPA:</span>
+                                    <span className={`print-value print-projected-gpa ${parseFloat(projectedGPAInfo.majorGPA || "0") < 0 ? "print-negative-value" : ""}`}>
+                                        {projectedGPAInfo.status === 'calculated' ? parseFloat(projectedGPAInfo.majorGPA).toFixed(3) : '0.000'}
+                                    </span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Credits:</span>
+                                    <span className="print-value">
+                                        {projectedGPAInfo.status === 'calculated' ? Math.round(projectedGPAInfo.finalMajorCredits) : '0'}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+                    
+                    {/* Target GPA Analysis */}
+                    <div className="print-section">
+                        <div className="print-section-heading">Target GPA Analysis</div>
+                        <div className="print-row-flex">
+                            <div className="print-col-1-1">
+                                <div className="print-row">
+                                    <span className="print-label">Target Overall GPA:</span>
+                                    <span className="print-value">{parseFloat(targetOverallGPAInput).toFixed(3)}</span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Required Semester GPA:</span>
+                                    <span 
+                                        className={`print-value print-required-gpa ${requiredSemesterInfo.isOverallImpossible ? "print-negative-value" : ""}`}
+                                    >
+                                        {requiredSemesterInfo.isOverallImpossible ? 
+                                            '> 4.000' : 
+                                            requiredSemesterInfo.overallDisplay.includes('points') ? 
+                                            requiredSemesterInfo.overallDisplay : 
+                                            requiredSemesterInfo.overallDisplay.split(' ')[0]}
+                                    </span>
+                                </div>
+                                <div className="print-based-on">
+                                    {requiredSemesterInfo.overallDisplay.includes('Based on') ? 
+                                    `Based on ${requiredSemesterInfo.overallDisplay.match(/\d+/)?.[0] || 0} semester credits and ${Math.round(requiredSemesterInfo.finalCumulativeOverallCredits || 0)} total credits` : ''}
+                                </div>
+                            </div>
+                            <div className="print-col-1-1">
+                                <div className="print-row">
+                                    <span className="print-label">Target Major GPA:</span>
+                                    <span className="print-value">{parseFloat(targetMajorGPAInput).toFixed(3)}</span>
+                                </div>
+                                <div className="print-row">
+                                    <span className="print-label">Required Semester GPA:</span>
+                                    <span 
+                                        className={`print-value print-required-gpa ${requiredSemesterInfo.isMajorImpossible ? "print-negative-value" : ""}`}
+                                    >
+                                        {requiredSemesterInfo.isMajorImpossible ? 
+                                            '> 4.000' : 
+                                            requiredSemesterInfo.majorDisplay.includes('points') ? 
+                                            requiredSemesterInfo.majorDisplay : 
+                                            requiredSemesterInfo.majorDisplay.split(' ')[0]}
+                                    </span>
+                                </div>
+                                <div className="print-based-on">
+                                    {requiredSemesterInfo.majorDisplay.includes('Based on') ? 
+                                    `Based on ${requiredSemesterInfo.majorDisplay.match(/\d+/)?.[0] || 0} major semester credits and ${Math.round(requiredSemesterInfo.finalCumulativeMajorCredits || 0)} total major credits` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div style={{ color: '#cc0000', fontSize: '9pt', padding: '3px 8px', marginTop: '5px' }}>
+                            * Major target GPA calculation requires major courses with grades that affect GPA.
+                        </div>
+                    </div>
+                    
+                    {/* Course list section */}
+                    <div className="print-courses">
+                        <div className="print-courses-heading">Course Planner ({plannerCourses.length} courses)</div>
+                        <table className="print-courses-table">
+                             <thead>
+                                 <tr>
+                                    <th className="print-courses-th">COURSE</th>
+                                    <th className="print-courses-th">CREDITS</th>
+                                    <th className="print-courses-th">GRADE</th>
+                                    <th className="print-courses-th">MAJOR?</th>
+                                    <th className="print-courses-th">REPEAT?</th>
+                                    <th className="print-courses-th">PREV.GRADE</th>
+                                 </tr>
+                             </thead>
+                             <tbody>
+                                {plannerCourses.map(course => (
+                                    <tr key={`print-course-${course.id}`}>
+                                        <td className="print-courses-td">{course.catalogKey}</td>
+                                        <td className="print-courses-td">{course.credits}</td>
+                                        <td className="print-courses-td">{course.selectedGrade || '--'}</td>
+                                        <td className="print-courses-td">{course.isMajor ? 'Yes' : 'No'}</td>
+                                        <td className="print-courses-td">{course.isRepeat ? 'Yes' : 'No'}</td>
+                                        <td className="print-courses-td">{course.isRepeat ? (course.previousGrade || '--') : 'N/A'}</td>
+                                    </tr>
+                                ))}
+                                {plannerCourses.length === 0 && (
+                                    <tr>
+                                        <td colSpan={6} className="print-courses-td text-center italic">No courses in planner.</td>
+                                    </tr>
+                                )}
+                             </tbody>
+                         </table>
                     </div>
                 </div>
 
-                {/* Course list placeholder (to be added later) */}
-                <div className="hidden print-courses print-only">
-                    <div className="print-section-heading">Course Planner</div>
-                    <table className="print-courses-table">
-                         <thead>
-                             <tr>
-                                <th className="print-courses-th">COURSE</th>
-                                <th className="print-courses-th">CREDITS</th>
-                                <th className="print-courses-th">GRADE</th>
-                                <th className="print-courses-th">MAJOR?</th>
-                                <th className="print-courses-th">REPEAT?</th>
-                                <th className="print-courses-th">PREV.GRADE</th>
-                             </tr>
-                         </thead>
-                         <tbody>
-                            {plannerCourses.map(course => (
-                                <tr key={`print-course-${course.id}`}>
-                                    <td className="print-courses-td">{course.catalogKey}</td>
-                                    <td className="print-courses-td">{course.credits}</td>
-                                    <td className="print-courses-td">{course.selectedGrade || '-'}</td>
-                                    <td className="print-courses-td">{course.isMajor ? 'Yes' : 'No'}</td>
-                                    <td className="print-courses-td">{course.isRepeat ? 'Yes' : 'No'}</td>
-                                    <td className="print-courses-td">{course.isRepeat ? (course.previousGrade || '-') : '-'}</td>
-                                     </tr>
-                            ))}
-                            {plannerCourses.length === 0 && (
-                                <tr>
-                                    <td colSpan={6} className="print-courses-td text-center italic">No courses in planner.</td>
-                                </tr>
-                            )}
-                         </tbody>
-                     </table>
-                </div>
-
-                {/* Footer with disclaimer and timestamp */}
-                <div className="hidden print-footer print-only">
-                    <div className="print-disclaimer">{disclaimerText}</div>
-                    <div className="print-timestamp">Printed on: {formatDate(new Date())}</div>
+                {/* Footer with disclaimer */}
+                <div className="print-footer">
+                    <div className="print-disclaimer">
+                        Disclaimer:
+                        <br />
+                        This GPA calculator provides estimates based on your input and may not reflect all official Bethlehem University grading policies; always
+                        consult your academic advisor and the University Catalog for accurate information.
+                    </div>
+                    <div className="print-version">
+                        Version {process.env.NEXT_PUBLIC_BUILD_NUMBER || '0.1.7'} ({process.env.NEXT_PUBLIC_BUILD_DATE || formatDate(new Date())})
+                    </div>
+                    <div className="print-page-number">Page 1 of 1</div>
                 </div>
             </div>
 

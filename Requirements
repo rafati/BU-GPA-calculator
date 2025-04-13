@@ -1,5 +1,5 @@
 Okay, here is a consolidated summary of the requirements for the Bethlehem University GPA Calculator, reflecting all the logic discussions and decisions, particularly the final refined logic for the Target GPA calculation (based on v34). This document should serve as a comprehensive reference.
-Version 0.1.7
+Version 0.1.8
 
 **--- Consolidated Requirements: Bethlehem University GPA Calculator (v34 Logic) ---**
 
@@ -118,6 +118,28 @@ Version 0.1.7
         8.  If `SemesterDivisorCredits` > 0, `RequiredSemesterGPA` = `RequiredSemesterPoints` / `SemesterDivisorCredits`.
         9.  Else, output `RequiredSemesterPoints` needed over 0 GPA credits.
         10. Format output string including divisor credits. Handle Overall/Major separately.
+*   **FR_TARGET_DISPLAY: Target GPA Analysis Display Format:**
+    *   **FR_TARGET_DISPLAY1: Layout Structure:**
+        * Use a dedicated section with the heading "Target GPA Analysis" separated by a horizontal line in reports.
+        * Display Overall and Major GPA targets and requirements side-by-side in two equal columns.
+        * Include detailed credit information beneath each required GPA value.
+    
+    *   **FR_TARGET_DISPLAY2: Content Requirements:**
+        * **Target Values:** Display target GPAs with exactly three decimal places (e.g., "2.000").
+        * **Required Values:** Show required semester GPAs in purple text with three decimal places.
+        * **Credit Information:** 
+            * Both print and PDF formats must display identical information showing "Based on X semester credits and Y total credits" where X represents applicable semester credits and Y represents final cumulative credits after adjustments.
+            * For Major GPA: Include the word "major" before "semester credits" and "total credits" (e.g., "Based on 13 major semester credits and 19 total major credits").
+            * The exact same format and wording must be used consistently across all output formats.
+        * **Points Display:** When divisor credits are zero, display "X.XX points needed" instead of a GPA value.
+        * **Impossible Values:** Use red text and "> 4.000" for impossible GPA targets (requiring semester GPA above 4.0).
+        * **Warning Text:** Include a red asterisk note: "* Major target GPA calculation requires major courses with grades that affect GPA."
+    
+    *   **FR_TARGET_DISPLAY3: Numerical Formatting:**
+        * All GPA values must display exactly three decimal places.
+        * Credit values must be displayed as whole numbers without decimal places.
+        * Required GPA values use purple text (#800080) when possible, red text (#cc0000) when impossible.
+        * The format must be identical across all generated outputs (screen, print, PDF).
 *   **Sharing Functionality:**
     *   **FR_SHARE1: Generate Shareable Link:** Add a button or mechanism to generate a unique URL that encodes the current state of the calculator. This includes:
         *   Editable Base Cumulative Overall Credits
@@ -145,6 +167,28 @@ Version 0.1.7
     *   **FR_PRINT4: Print Styling:** The print layout must be clean, professional, and use appropriate font sizes and spacing to ensure readability while maintaining the single-page constraint.
     *   **FR_PRINT5: Print Preview:** When possible, provide a print preview dialog using the browser's native functionality.
     *   **FR_PRINT6: Responsive Print Layout:** The print layout must adjust appropriately to fit all required information on a single page regardless of the number of courses in the planner.
+    *   **FR_PRINT7: Logo Integration:** The printed output must include the Bethlehem University logo in the header section of the document:
+        *   The logo must be appropriately sized to maintain the single-page layout constraint
+        *   The logo should be positioned in the top-left or top-center of the document
+        *   The logo must maintain its aspect ratio and proper rendering quality
+        *   Logo placement should not interfere with essential content visibility or readability
+        *   If space constraints become an issue with many courses, the system should dynamically reduce the logo size rather than allowing content to flow to a second page
+    *   **FR_PRINT8: Format Consistency with PDF:** The print output must exactly match the format and layout of the PDF output:
+        *   The header layout must include the logo on the left with the "GPA Calculator Report" title and student ID to the right
+        *   A horizontal line must separate the header from content, with Student ID and generation timestamp displayed above it
+        *   Layout structure must follow the exact PDF format:
+            * Top row with two equal columns: "Base Cumulative Data" and "Current Semester" (with "Projected Cumulative" below it)
+            * Single row for "Target GPA Analysis" with side-by-side display of Overall and Major targets and requirements
+            * "Course Planner" with course count displayed in parentheses
+        *   The "Base Cumulative Data" section must display credits as whole numbers and GPA values with exactly three decimal places
+        *   The "Current Semester" section must display GPA values in green with three decimal places
+        *   The "Projected Cumulative" section must display GPA values in blue with three decimal places 
+        *   The "Target GPA Analysis" section must display required GPA values in purple with three decimal places
+        *   The disclaimer at the bottom must be identical to the PDF version, including:
+            * A standard disclaimer about the calculator providing estimates
+            * The special disclaimer text from cell C1 of the configuration sheet
+            * "Page 1 of 1" displayed at the bottom right
+        *   The entire output must fit on a single page regardless of the number of courses
 
 **5. Non-Functional Requirements**
 
