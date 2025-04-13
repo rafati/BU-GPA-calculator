@@ -1,11 +1,14 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "SKIP_VERSION_INCREMENT=true npm run build",
   "outputDirectory": ".next",
   "cleanUrls": true,
   "git": {
     "deploymentEnabled": {
       "main": true
     }
+  },
+  "env": {
+    "SKIP_VERSION_INCREMENT": "true"
   }
 } 
