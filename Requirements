@@ -221,7 +221,7 @@ This document should now be a stable reference point capturing the full requirem
 *   **FR_BUILD1: Automatic Version Incrementing:**
     *   The application uses semantic versioning (MAJOR.MINOR.PATCH) for tracking changes
     *   The system automatically increments the PATCH version number (x.y.Z) when:
-        * The application is built for production via the `prebuild` npm script
+        * The application is built for production via the `prebuild` npm script (when SKIP_VERSION_INCREMENT is not set to 'true')
         * A developer manually runs the version update script
         * A developer uses the provided `prepush` script before pushing to the repository
     *   Version numbers are managed in multiple locations to ensure consistency:
@@ -260,6 +260,34 @@ This document should now be a stable reference point capturing the full requirem
         * `NEXT_PUBLIC_` prefixed environment variables in client-side code
         * A dedicated `buildInfo.ts` module that handles environment differences
     *   The system handles hydration differences between server and client environments to prevent React errors
+
+*   **FR_BUILD6: Version Consistency Between Environments:**
+    *   The application maintains version consistency between development and production environments:
+        * In development: Version increments only when developers explicitly run version update scripts
+        * In Vercel deployments: Version remains unchanged during builds via the SKIP_VERSION_INCREMENT=true flag
+    *   Regular git commits do NOT automatically change the version number
+    *   The commit hash is always updated regardless of version increment status
+    *   Specific commands for version management:
+        * `npm run update-version`: Updates version number without committing changes
+        * `npm run prepush`: Updates version number AND creates a commit with message "Bump version to X.Y.Z"
+        * Regular `git commit` and `git push` commands: Do NOT affect version numbers
+
+*   **FR_BUILD7: Version Management Process:**
+    *   **For routine code changes:**
+        1. Make code changes
+        2. Use standard `git commit` and `git push` commands
+        3. Version number remains unchanged
+        4. Commit hash updates in environment variables on next build
+    *   **For version increments:**
+        1. Make code changes
+        2. Run `npm run prepush` to increment version and create a commit
+        3. Run `git push` to push changes to remote repository
+        4. Vercel builds with the new version number
+    *   **For manual version control:**
+        1. Make code changes and commit them
+        2. Run `npm run update-version` to increment version without committing
+        3. Manually commit the version changes
+        4. Push all changes to the remote repository
 
 **10. Future Development Options**
 
