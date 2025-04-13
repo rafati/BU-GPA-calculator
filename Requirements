@@ -201,8 +201,19 @@ Version 0.1.9
         *   Package the user's text feedback along with the automatically captured data (email, student ID, optional screenshot).
         *   Send this package as an email *from* the application's Google Service Account address.
         *   **Requires:** The Service Account must have Domain-Wide Delegation enabled in Google Workspace Admin with the `https://www.googleapis.com/auth/gmail.send` scope authorized.
-    *   **FR_FEEDBACK5: Configurable Recipient:** Read the target email address for receiving feedback from cell `B2` of the designated configuration Google Sheet.
+    *   **FR_FEEDBACK5: Configurable Recipient:** Read the target email address for receiving feedback from cell `B4` of the designated configuration Google Sheet.
     *   **FR_FEEDBACK6: User Confirmation:** Provide visual confirmation to the user that their feedback has been sent successfully (e.g., a success message or toast notification). Handle potential sending errors gracefully.
+    *   **FR_FEEDBACK7: Fallback Email Configuration:** 
+        *   Implement a fallback mechanism for feedback recipient email via environment variables.
+        *   If the email address retrieved from the Google Sheet is invalid (not a proper email format), use the `FEEDBACK_RECIPIENT_EMAIL` environment variable as a fallback.
+        *   Log appropriate error messages when falling back to the environment variable.
+    *   **FR_FEEDBACK8: Modal Screenshot Exclusion:** 
+        *   When capturing a screenshot for feedback, exclude the feedback modal itself from the screenshot to prevent visual recursion.
+        *   Temporarily hide the feedback modal during screenshot capture, then restore it.
+    *   **FR_FEEDBACK9: Submission State Management:** 
+        *   Hide or disable form buttons (Submit and Cancel) after successful submission until the modal closes.
+        *   Display a success message to indicate successful submission.
+        *   Close the feedback modal automatically after a short delay (2 seconds) following successful submission.
 
 **5. Non-Functional Requirements**
 

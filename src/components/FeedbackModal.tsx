@@ -15,6 +15,7 @@ export default function FeedbackModal({ isOpen, onClose, userEmail, studentId }:
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [includeScreenshot, setIncludeScreenshot] = useState(true);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   if (!isOpen) return null;
 
@@ -96,11 +97,13 @@ export default function FeedbackModal({ isOpen, onClose, userEmail, studentId }:
       
       setStatusMessage({ type: 'success', text: 'Feedback submitted successfully!' });
       setFeedbackText('');
+      setIsSubmitted(true);
       
       // Close the modal after a short delay on success
       setTimeout(() => {
         onClose();
         setStatusMessage(null);
+        setIsSubmitted(false);
       }, 2000);
     } catch (error: any) {
       setStatusMessage({ type: 'error', text: error.message || 'An error occurred while submitting feedback' });
@@ -162,21 +165,25 @@ export default function FeedbackModal({ isOpen, onClose, userEmail, studentId }:
           )}
           
           <div className="flex justify-end space-x-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
-            </button>
+            {!isSubmitted && (
+              <>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                </button>
+              </>
+            )}
           </div>
         </form>
       </div>
