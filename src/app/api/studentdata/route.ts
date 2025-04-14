@@ -870,9 +870,10 @@ async function checkAccessPermissions(
                 const facultyStudentIds = studentRows
                     .filter(row => {
                         const studentFaculty = row[11];
-                        // Use case-insensitive comparison and trim spaces
+                        // Use case-insensitive comparison, trim spaces, and normalize whitespace
                         return studentFaculty && accessEntry.Faculty && 
-                               studentFaculty.trim().toLowerCase() === accessEntry.Faculty.trim().toLowerCase();
+                               studentFaculty.trim().toLowerCase().replace(/\s+/g, ' ') === 
+                               accessEntry.Faculty.trim().toLowerCase().replace(/\s+/g, ' ');
                     })
                     .map(row => row[0]);
                 
