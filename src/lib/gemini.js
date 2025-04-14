@@ -256,6 +256,9 @@ export async function getAIRecommendation(studentData, plannerData, userResponse
     
     // For debugging
     console.log("Sending prompt to Gemini (length):", prompt.length);
+    console.log("PROMPT CONTENT START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    console.log(prompt);
+    console.log("PROMPT CONTENT END <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
     
     if (!primaryModel && !fallbackModel) {
       console.error("No AI models available - both primary and fallback models failed to initialize");
@@ -369,7 +372,21 @@ export async function continueChatConversation(history, newUserMessage, studentD
     };
     
     console.log("Chat history length:", formattedHistory.length);
+    
+    // Log chat history for debugging
+    if (formattedHistory.length > 0) {
+      console.log("CHAT HISTORY START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+      formattedHistory.forEach((msg, i) => {
+        console.log(`[${msg.role}]: ${msg.parts[0].text.substring(0, 100)}${msg.parts[0].text.length > 100 ? '...' : ''}`);
+      });
+      console.log("CHAT HISTORY END <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+    }
+    
     console.log("New message:", newUserMessage.substring(0, 50) + (newUserMessage.length > 50 ? '...' : ''));
+    
+    console.log("CHAT MESSAGE START >>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    console.log(newUserMessage);
+    console.log("CHAT MESSAGE END <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
     
     if (!primaryModel && !fallbackModel) {
       console.error("No AI models available for chat - both models failed to initialize");
