@@ -2,8 +2,8 @@ import { getAIRecommendation, continueChatConversation } from '@/lib/gemini';
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
 
-// Set a safe timeout that's a bit less than Vercel's 10s limit to allow for clean response
-const API_TIMEOUT_MS = 9000;
+// Set a safe timeout that matches Vercel's serverless function timeout
+const API_TIMEOUT_MS = 120000;
 
 export async function POST(request: NextRequest) {
   // Create a promise that rejects after our timeout
