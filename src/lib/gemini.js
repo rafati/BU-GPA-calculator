@@ -14,10 +14,10 @@ console.log("Environment:", process.env.NODE_ENV);
 console.log("Is AI available:", isAIAvailable);
 
 // Use more stable, widely available models
-// Primary model (Gemini 1.5 Pro)
-const primaryModelName = "gemini-1.5-pro";
-// Fallback model (Gemini 1.5 Flash)
-const fallbackModelName = "gemini-1.5-flash";
+// Primary model (Gemini 1.5 Flash) - Using Flash as primary for better performance
+const primaryModelName = "gemini-1.5-flash";
+// Fallback model (Gemini 1.5 Pro) - Pro model kept as fallback
+const fallbackModelName = "gemini-1.5-pro";
 
 console.log("Using models - Primary:", primaryModelName, "Fallback:", fallbackModelName);
 
@@ -26,17 +26,33 @@ let primaryModel;
 let fallbackModel;
 
 try {
-  primaryModel = genAI.getGenerativeModel({ model: primaryModelName });
-  console.log("Primary model initialized successfully");
+  primaryModel = genAI.getGenerativeModel({ 
+    model: primaryModelName,
+    generationConfig: {
+      temperature: 0.4,
+      topK: 32,
+      topP: 0.95,
+      maxOutputTokens: 2048,
+    }
+  });
+  console.log("Primary model (Flash) initialized successfully");
 } catch (error) {
-  console.error("Error initializing primary model:", error.message);
+  console.error("Error initializing primary model (Flash):", error.message);
 }
 
 try {
-  fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
-  console.log("Fallback model initialized successfully");
+  fallbackModel = genAI.getGenerativeModel({ 
+    model: fallbackModelName,
+    generationConfig: {
+      temperature: 0.3,
+      topK: 32,
+      topP: 0.95,
+      maxOutputTokens: 4096,
+    }
+  });
+  console.log("Fallback model (Pro) initialized successfully");
 } catch (error) {
-  console.error("Error initializing fallback model:", error.message);
+  console.error("Error initializing fallback model (Pro):", error.message);
 }
 
 // Track if we've switched to fallback
@@ -179,50 +195,16 @@ ${Object.entries(userResponses).map(([question, answer]) => `- ${question}: ${an
     ? "The student has no courses in their planner yet. Recommend a suitable credit load and course strategy."
     : "The student has courses loaded in their planner. Consider these existing courses in your recommendations.";
   
-  // GPA calculation rules for Bethlehem University
+  // GPA calculation rules for Bethlehem University - Simplified version to reduce token count
   const calculationRules = `
-BETHLEHEM UNIVERSITY GPA CALCULATION RULES:
+BETHLEHEM UNIVERSITY GPA CALCULATION RULES (SUMMARY):
 ------------------------------------------
-1. GENERAL GPA CALCULATION:
-   - GPA = Total Points / Total Credits
-   - Points for a course = Course Credits × Grade Point Value
-   - Grades are assigned point values (A=4.0, A-=3.7, B+=3.3, B=3.0, etc.)
-   - Only courses with grades that affect GPA are included in calculations (W, E, I, IP, and non-repeat P grades do not affect GPA)
-
-2. REPEAT COURSE HANDLING:
-   - Grade Replacement: When a course is repeated, the previous points are removed from GPA calculation
-   - Credits Handling: For P-repeats (Pass), previous credits are also removed; for other repeats, only points are removed
-   - All repeated courses must be identified with the "Repeat" flag and include the previous grade
-   - P-repeats must additionally indicate if the original course was a major course
-
-3. MAJOR GPA CALCULATION:
-   - Only courses marked as "Major" are included in Major GPA calculation
-   - Same repeat rules apply for major courses
-   - Major flag must be properly set for accurate calculation
-
-4. TARGET GPA LOGIC (v34):
-   - Target GPA calculation identifies the required semester GPA needed to reach a target cumulative GPA
-   - Steps for calculation:
-     1. Identify relevant planner courses (exclude W, E, I, IP and non-repeat P)
-     2. Calculate AdjustedBasePoints/Credits (Base - P-repeat credits/points - ALL relevant repeat points)
-     3. Calculate NetCreditsAddedByPlanner (only non-repeats from relevant courses)
-     4. Calculate FinalCumulativeCredits (AdjustedBaseCredits + NetCreditsAddedByPlanner)
-     5. Calculate TotalPointsNeeded (TargetCumulativeGPA × FinalCumulativeCredits)
-     6. Calculate RequiredSemesterPoints (TotalPointsNeeded - AdjustedBasePoints)
-     7. Calculate SemesterDivisorCredits (from relevant courses: sum credits if grade is blank OR grade AffectsGPA)
-     8. If SemesterDivisorCredits > 0, RequiredSemesterGPA = RequiredSemesterPoints / SemesterDivisorCredits
-     9. Else, output RequiredSemesterPoints needed over 0 GPA credits
-     10. Format output string including divisor credits. Handle Overall/Major separately
-
-5. POINTS CORRECTION:
-   - Bethlehem University applies a "Points/10" rule for base cumulative points from the Students sheet
-   - This normalization only applies to the initial cumulative data, not to new calculations
-
-6. SPECIAL GRADE HANDLING:
-   - WF (Withdrawal Fail) is treated as equivalent to F grade
-   - Pass/Fail (P) grades do not affect GPA unless they are replacing a previous grade (P-repeat)
-   - Courses with blank grades or non-GPA affecting grades are excluded from semester GPA calculation
-   - For target GPA calculation, courses with blank grades are included in the divisor credits
+- GPA = Total Points / Total Credits
+- Points = Course Credits × Grade Point Value (A=4.0, A-=3.7, B+=3.3, etc.)
+- Major GPA includes only courses flagged as major courses
+- Repeated courses replace previous grade points in GPA calculation
+- Non-GPA affecting grades: W, I, IP, E, and non-repeated P grades
+- Minimum acceptable GPA: 2.000 (academic probation threshold)
 `;
   
   // Complete prompt
@@ -239,18 +221,14 @@ ${calculationRules}
 
 ${plannerStateInstructions}
 
-Based on this information, please provide:
-
+Based on this information, provide:
 1. A recommended target semester GPA (to three decimal places)
 2. Credit recommendations (total number and major/non-major breakdown)
-3. Specific strategies tailored to this student's situation, considering all the GPA calculation rules
-4. If the student has repeat courses or is planning to repeat courses, address the specific impact on their GPA
-5. If there are any courses with special grading (P/F, WF), address the specific implications
+3. Specific strategies tailored to this student's situation
+4. Brief advice for any repeat courses or special grading cases
 
-Format your response in a conversational, supportive tone. Use bullet points for clarity where appropriate.
+Format your response in a conversational, supportive tone using bullet points for clarity.
 Present numeric GPA values with exactly three decimal places (e.g., "3.250").
-Ensure credit values are whole numbers.
-
 Remember that Bethlehem University requires a minimum 2.000 GPA to avoid academic probation.
 
 Student ID: ${studentId || 'N/A'}
@@ -286,6 +264,11 @@ export async function getAIRecommendation(studentData, plannerData, userResponse
     
     let result;
     
+    // Setup AbortController for timeout
+    const timeoutMs = 8000; // 8 seconds to leave buffer for other operations
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
     try {
       // First try with primary model
       if (!primaryModel) {
@@ -294,10 +277,24 @@ export async function getAIRecommendation(studentData, plannerData, userResponse
       
       console.log("Attempting to generate content with primary model");
       const model = getModel();
-      result = await model.generateContent(prompt);
+      
+      // Pass the AbortController signal to the API call
+      result = await model.generateContent(prompt, { signal: controller.signal });
       console.log("Content generation successful");
       
+      // Clear timeout since we got a response
+      clearTimeout(timeoutId);
+      
     } catch (primaryError) {
+      // Clear timeout to prevent memory leaks
+      clearTimeout(timeoutId);
+      
+      // Handle timeout specifically
+      if (primaryError.name === 'AbortError') {
+        console.error("Primary model request timed out");
+        return "The request took too long to process. I'll provide a simpler response. Please try asking a more specific question next time.";
+      }
+      
       // Log the primary model error
       console.error("Primary model error:", primaryError.message);
       
@@ -307,11 +304,24 @@ export async function getAIRecommendation(studentData, plannerData, userResponse
           console.log("Switching to fallback model");
           usingFallbackModel = true;
           
+          // Setup a new AbortController for the fallback request
+          const fallbackController = new AbortController();
+          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), timeoutMs);
+          
           const model = getModel();
-          result = await model.generateContent(prompt);
+          result = await model.generateContent(prompt, { signal: fallbackController.signal });
           console.log("Fallback model content generation successful");
           
+          // Clear timeout since we got a response
+          clearTimeout(fallbackTimeoutId);
+          
         } catch (fallbackError) {
+          // Handle timeout for fallback
+          if (fallbackError.name === 'AbortError') {
+            console.error("Fallback model request timed out");
+            return "Both models took too long to respond. Please try a simpler question or try again later.";
+          }
+          
           console.error("Fallback model error:", fallbackError.message);
           throw new Error(`Both models failed. Primary: ${primaryError.message}, Fallback: ${fallbackError.message}`);
         }
@@ -368,6 +378,11 @@ export async function continueChatConversation(history, newUserMessage, studentD
     
     let result;
     
+    // Setup AbortController for timeout
+    const timeoutMs = 8000; // 8 seconds to leave buffer for other operations
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
     try {
       // Try with primary model first
       if (!primaryModel) {
@@ -380,18 +395,30 @@ export async function continueChatConversation(history, newUserMessage, studentD
       const chat = primaryModel.startChat({
         history: formattedHistory,
         generationConfig: {
-          temperature: 0.3,
+          temperature: 0.4,
           topK: 32,
           topP: 0.95,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 2048,
         }
       });
       
-      // Send the message and get the response
-      result = await chat.sendMessage(userMessage.parts[0].text);
+      // Send the message and get the response with timeout
+      result = await chat.sendMessage(userMessage.parts[0].text, { signal: controller.signal });
       console.log("Chat response received successfully");
       
+      // Clear timeout since we got a response
+      clearTimeout(timeoutId);
+      
     } catch (primaryError) {
+      // Clear timeout to prevent memory leaks
+      clearTimeout(timeoutId);
+      
+      // Handle timeout specifically
+      if (primaryError.name === 'AbortError') {
+        console.error("Primary chat model request timed out");
+        return "The request took too long to process. Please try a shorter or simpler question.";
+      }
+      
       console.error("Primary model chat error:", primaryError.message);
       
       // If we haven't tried the fallback yet, try it now
@@ -400,22 +427,35 @@ export async function continueChatConversation(history, newUserMessage, studentD
           console.log("Switching to fallback model for chat");
           usingFallbackModel = true;
           
+          // Setup a new AbortController for the fallback request
+          const fallbackController = new AbortController();
+          const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), timeoutMs);
+          
           // Create a chat session with the fallback model
           const chat = fallbackModel.startChat({
             history: formattedHistory,
             generationConfig: {
-              temperature: 0.4, // Slightly higher for fallback
+              temperature: 0.3,
               topK: 32,
               topP: 0.95,
-              maxOutputTokens: 2048, // Lower for fallback
+              maxOutputTokens: 4096,
             }
           });
           
-          // Send the message and get the response
-          result = await chat.sendMessage(userMessage.parts[0].text);
+          // Send the message and get the response with timeout
+          result = await chat.sendMessage(userMessage.parts[0].text, { signal: fallbackController.signal });
           console.log("Fallback chat response received successfully");
           
+          // Clear timeout since we got a response
+          clearTimeout(fallbackTimeoutId);
+          
         } catch (fallbackError) {
+          // Handle timeout for fallback
+          if (fallbackError.name === 'AbortError') {
+            console.error("Fallback chat model request timed out");
+            return "Both models took too long to respond. Please try a simpler question or try again later.";
+          }
+          
           console.error("Fallback model chat error:", fallbackError.message);
           throw new Error(`Both chat models failed. Primary: ${primaryError.message}, Fallback: ${fallbackError.message}`);
         }
