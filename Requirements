@@ -288,13 +288,55 @@ Version 0.1.9
             * Include an AI assistant avatar/icon to create a more personalized experience
             * Employ visual formatting (bold text, bullet points, etc.) to improve readability of recommendations
     
-    *   **FR_AI6: Empty Planner Handling:**
-        *   **Special Case Logic:** If the planner is empty (no courses added yet), the AI should:
+    *   **FR_AI6: Planner State Handling:**
+        *   **Empty Planner Logic:** If the planner is empty (no courses added yet), the AI should:
             * Focus on recommending a suitable credit load
             * Suggest a credit distribution between major and non-major courses
             * Provide GPA targets based solely on the student's cumulative data
             * Acknowledge the empty planner state in its recommendations
-    
+        *   **Pre-Populated Planner Logic:** If the planner contains courses loaded from the database (Google Sheet):
+            * Acknowledge that these are the courses the student is currently registered for
+            * Explicitly ask if the student is looking to:
+                * Modify their current semester registration 
+                * Add courses for planning future semesters
+                * Evaluate their current registration without changes
+            * Adapt recommendations based on whether changes to current registration are feasible
+            * Consider institutional deadlines for registration changes in recommendations
+        *   **Multi-Semester Planning:** When the student indicates they are planning for future semesters:
+            * Ask if the current registered courses should be treated as confirmed
+            * Allow students to designate which courses belong to which semester
+            * For GPA calculation purposes, provide two calculation modes:
+                * Treat all courses as if registered in a single semester (simplified mode)
+                * Calculate semester-by-semester progression of GPA (detailed mode)
+            * Explain GPA projection differences between these two approaches
+        *   **Registration Modification Guidance:** When the student indicates they want to modify current registration:
+            * Ask which specific courses they are considering dropping or changing
+            * Provide targeted guidance on the GPA impact of these specific changes
+            * Include information about registration deadline considerations
+            * Note any potential implications for course prerequisites or program requirements
+        *   **Interactive Data Collection:** When collecting additional information, the system should:
+            * Initiate a guided conversation through the chatbot interface to collect relevant data
+            * Ask specific, structured questions to gather information needed for accurate recommendations
+            * Present these questions in a conversational format with simple response options where possible
+        *   **Required Clarification Questions:**
+            * **Registration Status:** "Would you like to modify your current registration, plan for future semesters, or evaluate your current courses?"
+            * **Repeat Courses:** "Are you planning to repeat any courses this semester?"
+            * **Repeat Course Details:** If yes to repeat courses:
+                * "How many courses do you plan to repeat?"
+                * "Are these repeat courses part of your major curriculum?"
+                * "What were your previous grades in these courses?" (with grade selection options)
+            * **Credit Load Preferences:** "Do you prefer to take a full course load or a reduced schedule?"
+            * **Major/Non-Major Balance:** "Do you want to focus more on major courses or general requirements?"
+            * **GPA Goals:** "Are you trying to improve your GPA, maintain your current standing, or fulfill specific graduation requirements?"
+            * **Multi-Semester Planning:** If planning for future:
+                * "How many semesters ahead are you planning for?"
+                * "Do you want to see GPA projections semester by semester, or as an overall calculation?"
+        *   **Data Utilization:**
+            * Combine this interactively collected data with the existing student profile information
+            * Package all information into a structured format for the AI prompt
+            * Reference the collected data explicitly in recommendations to show how it influenced the advice
+            * Store responses temporarily for the session to allow for refined recommendations if the user modifies the planner
+
     *   **FR_AI7: Prompt Engineering and Output Control:**
         *   **Prompt Template:** Develop a structured prompt template with clear instructions and data formatting to ensure consistent AI responses.
         *   **Response Verification:**

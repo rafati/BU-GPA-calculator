@@ -8,14 +8,36 @@ const isAIAvailable = logAIAvailability();
 const apiKey = process.env.GOOGLE_AI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(apiKey);
 
-// Primary model (Gemini 2.5 Pro Experimental)
-const primaryModelName = "gemini-2.5-pro-exp-03-25";
+// Debug logging to help troubleshoot Vercel deployment
+console.log("Gemini API initialization - API Key length:", apiKey ? apiKey.length : 0);
+console.log("Environment:", process.env.NODE_ENV);
+console.log("Is AI available:", isAIAvailable);
+
+// Use more stable, widely available models
+// Primary model (Gemini 1.5 Pro)
+const primaryModelName = "gemini-1.5-pro";
 // Fallback model (Gemini 1.5 Flash)
 const fallbackModelName = "gemini-1.5-flash";
 
+console.log("Using models - Primary:", primaryModelName, "Fallback:", fallbackModelName);
+
 // Create model instances
-const primaryModel = genAI.getGenerativeModel({ model: primaryModelName });
-const fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
+let primaryModel;
+let fallbackModel;
+
+try {
+  primaryModel = genAI.getGenerativeModel({ model: primaryModelName });
+  console.log("Primary model initialized successfully");
+} catch (error) {
+  console.error("Error initializing primary model:", error.message);
+}
+
+try {
+  fallbackModel = genAI.getGenerativeModel({ model: fallbackModelName });
+  console.log("Fallback model initialized successfully");
+} catch (error) {
+  console.error("Error initializing fallback model:", error.message);
+}
 
 // Track if we've switched to fallback
 let usingFallbackModel = false;
@@ -24,7 +46,12 @@ let usingFallbackModel = false;
  * Get the appropriate model, with fallback handling
  */
 const getModel = () => {
-  return usingFallbackModel ? fallbackModel : primaryModel;
+  if (usingFallbackModel) {
+    console.log("Using fallback model");
+    return fallbackModel;
+  }
+  console.log("Using primary model");
+  return primaryModel;
 };
 
 /**
@@ -236,102 +263,178 @@ Student ID: ${studentId || 'N/A'}
 export async function getAIRecommendation(studentData, plannerData, userResponses = {}, studentId = null) {
   // Check if AI is available
   if (!isAIAvailable) {
+    console.error("AI recommendations not available - environment check failed");
     return "AI recommendations are not available. Please check your environment configuration.";
+  }
+  
+  // Validate input data
+  if (!studentData || typeof studentData !== 'object') {
+    console.error("Invalid studentData provided:", studentData);
+    return "Unable to generate recommendations due to invalid student data. Please reload the page and try again.";
   }
   
   try {
     const prompt = buildPrompt(studentData, plannerData, userResponses, studentId);
     
     // For debugging
-    console.log("Sending prompt to Gemini:", prompt);
+    console.log("Sending prompt to Gemini (length):", prompt.length);
+    
+    if (!primaryModel && !fallbackModel) {
+      console.error("No AI models available - both primary and fallback models failed to initialize");
+      return "AI service is temporarily unavailable. Please try again later.";
+    }
+    
+    let result;
     
     try {
       // First try with primary model
-      const result = await getModel().generateContent(prompt);
-      const response = result.response;
-      return response.text();
+      if (!primaryModel) {
+        throw new Error("Primary model not available");
+      }
+      
+      console.log("Attempting to generate content with primary model");
+      const model = getModel();
+      result = await model.generateContent(prompt);
+      console.log("Content generation successful");
+      
     } catch (primaryError) {
-      // If primary model fails and we're not already using fallback
-      if (!usingFallbackModel) {
-        console.log("Primary model failed, switching to fallback model:", primaryError.message);
-        usingFallbackModel = true;
-        
-        // Try again with fallback model
-        const fallbackResult = await getModel().generateContent(prompt);
-        const fallbackResponse = fallbackResult.response;
-        return fallbackResponse.text();
+      // Log the primary model error
+      console.error("Primary model error:", primaryError.message);
+      
+      // If we haven't tried the fallback yet, try it now
+      if (!usingFallbackModel && fallbackModel) {
+        try {
+          console.log("Switching to fallback model");
+          usingFallbackModel = true;
+          
+          const model = getModel();
+          result = await model.generateContent(prompt);
+          console.log("Fallback model content generation successful");
+          
+        } catch (fallbackError) {
+          console.error("Fallback model error:", fallbackError.message);
+          throw new Error(`Both models failed. Primary: ${primaryError.message}, Fallback: ${fallbackError.message}`);
+        }
       } else {
-        // If even the fallback model fails, rethrow
+        // Either we're already using fallback or it's not available
         throw primaryError;
       }
     }
+    
+    // Extract and return the response text
+    if (result && result.response) {
+      return result.response.text();
+    } else {
+      console.error("Unexpected response format:", result);
+      return "Sorry, I received an unexpected response format from the AI service. Please try again later.";
+    }
+    
   } catch (error) {
-    console.error("Error getting AI recommendation:", error);
-    return "I'm sorry, I couldn't generate recommendations at this time. Please try again later.";
+    console.error("Error in getAIRecommendation:", error.message, error.stack);
+    return `Sorry, I encountered an error generating recommendations: ${error.message}. This may be due to a temporary issue with the AI service. Please try again later.`;
   }
 }
 
 /**
- * Function to handle chat history
+ * Continues an existing conversation with chat history
  */
-export async function continueChatConversation(history, newUserMessage, studentId = null) {
+export async function continueChatConversation(history, newUserMessage, studentData, plannerData, studentId = null) {
   // Check if AI is available
   if (!isAIAvailable) {
-    return "AI conversation is not available. Please check your environment configuration.";
+    console.error("AI chat continuation not available - environment check failed");
+    return "AI chat service is not available. Please check your environment configuration.";
   }
   
   try {
-    // Gemini API requires the first history message to be from a user
-    // Process history to ensure compliance with this requirement
-    let processedHistory = [...history];
-    
-    // Check if the first message is from the AI (model)
-    if (processedHistory.length > 0 && processedHistory[0].type === 'ai') {
-      // If we only have an AI greeting, create a minimal conversation
-      if (processedHistory.length === 1) {
-        // Create a new history with a dummy user message first, followed by the AI greeting
-        processedHistory = [
-          { type: 'user', text: 'Hi, I need help with my GPA planning.' },
-          processedHistory[0]
-        ];
-      } else if (processedHistory.length > 1) {
-        // If we have more than one message, remove the first AI message
-        // and handle it separately in our response
-        const aiGreeting = processedHistory.shift();
-        console.log("Removed initial AI greeting for Gemini API compatibility:", aiGreeting.text);
-      }
-    }
-    
-    // Add student ID context if available
-    const contextualPrompt = studentId ? `Context: Student ID is ${studentId}. ` : '';
-    
-    // Create formatted history for the API
-    const formattedHistory = processedHistory.map(msg => ({
+    // Format chat history for the Gemini API
+    const formattedHistory = history.map(msg => ({
       role: msg.type === 'user' ? 'user' : 'model',
       parts: [{ text: msg.text }]
     }));
     
-    // If we have a valid history with at least one message (which must be a user message now)
-    if (formattedHistory.length > 0) {
-      // Create a chat instance
-      const chat = getModel().startChat({
-        history: formattedHistory
+    // Add the new user message
+    const userMessage = {
+      role: 'user',
+      parts: [{ text: newUserMessage }]
+    };
+    
+    console.log("Chat history length:", formattedHistory.length);
+    console.log("New message:", newUserMessage.substring(0, 50) + (newUserMessage.length > 50 ? '...' : ''));
+    
+    if (!primaryModel && !fallbackModel) {
+      console.error("No AI models available for chat - both models failed to initialize");
+      return "AI chat service is temporarily unavailable. Please try again later.";
+    }
+    
+    let result;
+    
+    try {
+      // Try with primary model first
+      if (!primaryModel) {
+        throw new Error("Primary chat model not available");
+      }
+      
+      console.log("Attempting chat with primary model");
+      
+      // Create a chat session
+      const chat = primaryModel.startChat({
+        history: formattedHistory,
+        generationConfig: {
+          temperature: 0.3,
+          topK: 32,
+          topP: 0.95,
+          maxOutputTokens: 4096,
+        }
       });
       
-      // Send the new message with context if needed
-      const result = await chat.sendMessage(contextualPrompt + newUserMessage);
+      // Send the message and get the response
+      result = await chat.sendMessage(userMessage.parts[0].text);
+      console.log("Chat response received successfully");
+      
+    } catch (primaryError) {
+      console.error("Primary model chat error:", primaryError.message);
+      
+      // If we haven't tried the fallback yet, try it now
+      if (!usingFallbackModel && fallbackModel) {
+        try {
+          console.log("Switching to fallback model for chat");
+          usingFallbackModel = true;
+          
+          // Create a chat session with the fallback model
+          const chat = fallbackModel.startChat({
+            history: formattedHistory,
+            generationConfig: {
+              temperature: 0.4, // Slightly higher for fallback
+              topK: 32,
+              topP: 0.95,
+              maxOutputTokens: 2048, // Lower for fallback
+            }
+          });
+          
+          // Send the message and get the response
+          result = await chat.sendMessage(userMessage.parts[0].text);
+          console.log("Fallback chat response received successfully");
+          
+        } catch (fallbackError) {
+          console.error("Fallback model chat error:", fallbackError.message);
+          throw new Error(`Both chat models failed. Primary: ${primaryError.message}, Fallback: ${fallbackError.message}`);
+        }
+      } else {
+        // Either we're already using fallback or it's not available
+        throw primaryError;
+      }
+    }
+    
+    // Extract and return the response text
+    if (result && result.response) {
       return result.response.text();
     } else {
-      // If we somehow have no valid history, start fresh with just the new message
-      // This is a fallback case that shouldn't normally happen
-      const result = await getModel().generateContent(
-        contextualPrompt + "The student asks: " + newUserMessage + 
-        "\nProvide a helpful response about GPA planning."
-      );
-      return result.response.text();
+      console.error("Unexpected chat response format:", result);
+      return "Sorry, I received an unexpected response format from the AI service. Please try again later.";
     }
+    
   } catch (error) {
-    console.error("Error in chat conversation:", error);
-    return "I'm sorry, I couldn't process your message. Please try again.";
+    console.error("Error in continueChatConversation:", error.message, error.stack);
+    return `Sorry, I encountered an error processing your message: ${error.message}. This may be due to a temporary issue with the AI service. Please try again later.`;
   }
 } 
