@@ -14,8 +14,8 @@ console.log("Environment:", process.env.NODE_ENV);
 console.log("Is AI available:", isAIAvailable);
 
 // Use more stable, widely available models
-// Primary model (Gemini 2.5 Pro Preview) - Using latest Pro model for best quality
-const primaryModelName = "gemini-2.5-pro-preview-03-25";
+// Primary model (Gemini 2.5 Pro Experimental) - Using latest Pro experimental model for best quality
+const primaryModelName = "gemini-2.5-pro-exp-03-25";
 // Fallback model (Gemini 1.5 Flash) - Flash model kept as fallback for performance
 const fallbackModelName = "gemini-1.5-flash";
 
@@ -35,9 +35,9 @@ try {
       maxOutputTokens: 4096,
     }
   });
-  console.log("Primary model (Gemini 2.5 Pro Preview) initialized successfully");
+  console.log("Primary model (Gemini 2.5 Pro Experimental) initialized successfully");
 } catch (error) {
-  console.error("Error initializing primary model (Gemini 2.5 Pro Preview):", error.message);
+  console.error("Error initializing primary model (Gemini 2.5 Pro Experimental):", error.message);
 }
 
 try {
@@ -278,12 +278,12 @@ export async function getAIRecommendation(studentData, plannerData, userResponse
         throw new Error("Primary model not available");
       }
       
-      console.log("Attempting to generate content with primary model (Gemini 2.5 Pro Preview)");
+      console.log("Attempting to generate content with primary model (Gemini 2.5 Pro Experimental)");
       const model = getModel();
       
       // Pass the AbortController signal to the API call
       result = await model.generateContent(prompt, { signal: controller.signal });
-      console.log("Content generation successful with Gemini 2.5 Pro Preview");
+      console.log("Content generation successful with Gemini 2.5 Pro Experimental");
       
       // Clear timeout since we got a response
       clearTimeout(timeoutId);
@@ -294,12 +294,12 @@ export async function getAIRecommendation(studentData, plannerData, userResponse
       
       // Handle timeout specifically
       if (primaryError.name === 'AbortError') {
-        console.error("Primary model (Gemini 2.5 Pro Preview) request timed out");
+        console.error("Primary model (Gemini 2.5 Pro Experimental) request timed out");
         return "The request took too long to process. I'll provide a simpler response. Please try asking a more specific question next time.";
       }
       
       // Log the primary model error
-      console.error("Primary model (Gemini 2.5 Pro Preview) error:", primaryError.message);
+      console.error("Primary model (Gemini 2.5 Pro Experimental) error:", primaryError.message);
       
       // If we haven't tried the fallback yet, try it now
       if (!usingFallbackModel && fallbackModel) {
@@ -406,7 +406,7 @@ export async function continueChatConversation(history, newUserMessage, studentD
         throw new Error("Primary chat model not available");
       }
       
-      console.log("Attempting chat with primary model (Gemini 2.5 Pro Preview)");
+      console.log("Attempting chat with primary model (Gemini 2.5 Pro Experimental)");
       
       // Create a chat session
       const chat = primaryModel.startChat({
@@ -421,7 +421,7 @@ export async function continueChatConversation(history, newUserMessage, studentD
       
       // Send the message and get the response with timeout
       result = await chat.sendMessage(userMessage.parts[0].text, { signal: controller.signal });
-      console.log("Chat response received successfully from Gemini 2.5 Pro Preview");
+      console.log("Chat response received successfully from Gemini 2.5 Pro Experimental");
       
       // Clear timeout since we got a response
       clearTimeout(timeoutId);
@@ -432,11 +432,11 @@ export async function continueChatConversation(history, newUserMessage, studentD
       
       // Handle timeout specifically
       if (primaryError.name === 'AbortError') {
-        console.error("Primary chat model (Gemini 2.5 Pro Preview) request timed out");
+        console.error("Primary chat model (Gemini 2.5 Pro Experimental) request timed out");
         return "The request took too long to process. Please try a shorter or simpler question.";
       }
       
-      console.error("Primary model (Gemini 2.5 Pro Preview) chat error:", primaryError.message);
+      console.error("Primary model (Gemini 2.5 Pro Experimental) chat error:", primaryError.message);
       
       // If we haven't tried the fallback yet, try it now
       if (!usingFallbackModel && fallbackModel) {
