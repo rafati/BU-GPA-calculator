@@ -127,7 +127,8 @@ export async function GET(request: NextRequest) {
             console.log(`Processing request for specific student: ${requestedStudentId}`);
             
             // --- Student Record Lookup ---
-            const studentsRange = `${studentsSheetName}!A2:K`;
+            // IMPORTANT: Must use A2:L to include faculty data in column L
+            const studentsRange = `${studentsSheetName}!A2:L`;
             console.log(`Fetching student data from ${studentsSheetName} range ${studentsRange}`);
             
             let studentRecord: StudentRecord | null = null;
@@ -168,6 +169,10 @@ export async function GET(request: NextRequest) {
                     Department: matchedStudentRow[10] || null,
                     Faculty: matchedStudentRow[11] || null
                 };
+                
+                // Log faculty data for debugging
+                console.log(`DEBUG: Student Faculty data at index 11: "${matchedStudentRow[11] || 'none'}"`);
+                console.log(`DEBUG: Full student row length: ${matchedStudentRow.length}, data: ${JSON.stringify(matchedStudentRow)}`);
                 
                 // --- Authorization Check ---
                 // 1. Direct Access: Check if user is the student
