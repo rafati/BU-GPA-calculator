@@ -268,7 +268,7 @@ export async function getAIRecommendation(studentData, plannerData, userResponse
     let result;
     
     // Set timeout for model responses
-    const timeoutMs = 120000; // 120 seconds to allow for longer model responses
+    const timeoutMs = 20000; // Increased from 8000ms to 20000ms to allow more time for AI processing
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     
@@ -396,7 +396,7 @@ export async function continueChatConversation(history, newUserMessage, studentD
     let result;
     
     // Set timeout for model responses
-    const timeoutMs = 120000; // 120 seconds to allow for longer model responses
+    const timeoutMs = 20000; // Increased from 8000ms to 20000ms to allow more time for AI processing
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     
