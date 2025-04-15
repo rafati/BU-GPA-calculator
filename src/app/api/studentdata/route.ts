@@ -69,6 +69,7 @@ interface StudentDataResponse {
     advisees?: AdviseeInfo[] | null;            // List for advisors
     isOverride?: boolean;
     overrideTargetEmail?: string;              // Add the override target email
+    canUseAI?: boolean;                       // Add canUseAI flag
 }
 
 // Add interface for Class Access entry
@@ -78,6 +79,7 @@ interface ClassAccessEntry {
     Faculty?: string;
     AccessAllStudents?: string;
     Student?: string;
+    UseAI?: string;  // Add UseAI field
 }
 
 // Define the structure for the student access check result
@@ -86,6 +88,7 @@ interface UserAccessDetails {
     accessReason: string;
     studentIdsWithAccess: string[];
     hasFullAccess: boolean;
+    canUseAI: boolean;  // Add canUseAI flag
 }
 
 // --- End Interfaces ---
@@ -121,6 +124,9 @@ export async function GET(request: NextRequest) {
         const studentsSheetName = 'Students';
         const regSheetName = 'registration';
         const accessSheetName = 'Access'; // Correct sheet name (not "Class Access")
+
+        // Initialize userAccessDetails after declaring it
+        let userAccessDetails: UserAccessDetails | null = null;
 
         // --- Specific Student Request Handling ---
         if (requestedStudentId) {
@@ -237,6 +243,9 @@ export async function GET(request: NextRequest) {
                         accessReason = accessDetails.accessReason;
                         console.log(`Access granted via Access sheet: ${accessReason}`);
                     }
+                    
+                    // Store the access details for AI permission check
+                    userAccessDetails = accessDetails;
                 }
                 
                 // Final authorization check
@@ -312,6 +321,7 @@ export async function GET(request: NextRequest) {
                     registrations: registrationRecords,
                     isOverride: isOverrideRequested, // Use the override flag from the request
                     overrideTargetEmail: isOverrideRequested && overrideEmailTarget ? overrideEmailTarget : undefined, // Include override email if in override mode
+                    canUseAI: userAccessDetails ? userAccessDetails.canUseAI : false, // Use the canUseAI from access check
                 };
                 
                 return NextResponse.json(responseData);
@@ -390,12 +400,6 @@ export async function GET(request: NextRequest) {
         let adviseeList: AdviseeInfo[] = []; // <<< Initialize advisee list
         let accessType: StudentDataResponse['accessType'] = 'none'; // <<< Default access type
         let studentId: string | null = null; // <<< Define studentId here
-        let userAccessDetails: UserAccessDetails = {
-            hasAccess: false,
-            accessReason: '',
-            studentIdsWithAccess: [],
-            hasFullAccess: false
-        };
 
         // 3. --- Fetch from 'Students' Sheet ---
         const studentsRange = `${studentsSheetName}!A2:L`;
@@ -620,14 +624,16 @@ export async function GET(request: NextRequest) {
                 student: studentRecord, 
                 registrations: registrationRecords, 
                 isOverride: isOverrideApplied,
-                overrideTargetEmail: isOverrideApplied && overrideEmailTarget ? overrideEmailTarget : undefined 
+                overrideTargetEmail: isOverrideApplied && overrideEmailTarget ? overrideEmailTarget : undefined,
+                canUseAI: userAccessDetails ? userAccessDetails.canUseAI : false // Use the canUseAI from access check
              };
         } else if (accessType === 'advisor' && adviseeList.length > 0) {
              responseData = { 
                 accessType: 'advisor', 
                 advisees: adviseeList, 
                 isOverride: isOverrideApplied,
-                overrideTargetEmail: isOverrideApplied && overrideEmailTarget ? overrideEmailTarget : undefined 
+                overrideTargetEmail: isOverrideApplied && overrideEmailTarget ? overrideEmailTarget : undefined,
+                canUseAI: userAccessDetails ? userAccessDetails.canUseAI : false // Use the canUseAI from access check
              };
         } else if (accessType === 'none' && session) {
             console.log(`User ${session.user?.email} not found in Students or Access sheets. Providing blank calculator.`);
@@ -646,18 +652,60 @@ export async function GET(request: NextRequest) {
                 student: defaultStudentRecord, // <<< Provide default student record
                 registrations: [], // <<< Provide empty registrations
                 isOverride: isOverrideApplied, 
-                overrideTargetEmail: (isOverrideApplied && overrideEmailTarget) ? overrideEmailTarget : undefined 
+                overrideTargetEmail: (isOverrideApplied && overrideEmailTarget) ? overrideEmailTarget : undefined,
+                canUseAI: userAccessDetails ? userAccessDetails.canUseAI : false // Use the canUseAI from access check
             };
         } else { // Covers accessType 'none' when no session, or other unexpected cases
             responseData = { 
                 accessType: 'none', 
                 isOverride: isOverrideApplied,
-                overrideTargetEmail: (isOverrideApplied && overrideEmailTarget) ? overrideEmailTarget : undefined 
+                overrideTargetEmail: (isOverrideApplied && overrideEmailTarget) ? overrideEmailTarget : undefined,
+                canUseAI: userAccessDetails ? userAccessDetails.canUseAI : false // Use the canUseAI from access check
             };
         }
         // <<< End Construct Response >>>
 
-        return NextResponse.json(responseData);
+        // Return the consolidated data in the response
+        console.log(`Student data fetch summary:
+            API status: 200 OK
+            Access type: ${userAccessDetails ? userAccessDetails.accessReason : 'none'}
+            Student ID: ${studentRecord ? studentRecord.DegStudentNo : 'not loaded'}
+            canUseAI value: ${userAccessDetails ? userAccessDetails.canUseAI : false}
+        `);
+        
+        // Create the response object
+        const responseObject = {
+            accessType: accessType, // Use accessType which should be 'direct', 'advisor', or 'none'
+            studentData: studentRecord,
+            registrations: registrationRecords,
+            advisees: adviseeList,
+            isOverride: isOverrideApplied,
+            overrideTargetEmail: isOverrideApplied && overrideEmailTarget ? overrideEmailTarget : undefined,
+            canUseAI: userAccessDetails ? userAccessDetails.canUseAI : false // Use the canUseAI from access check
+        };
+
+        // Ensure accessType is one of the expected values
+        if (responseObject.accessType !== 'direct' && 
+            responseObject.accessType !== 'advisor' && 
+            responseObject.accessType !== 'none') {
+            // If we have advisees but accessType is not one of the expected values, set it to advisor
+            if (responseObject.advisees && responseObject.advisees.length > 0) {
+                console.log(`Correcting accessType from '${responseObject.accessType}' to 'advisor' since we have ${responseObject.advisees.length} advisees`);
+                responseObject.accessType = 'advisor';
+            } else {
+                console.log(`Correcting accessType from '${responseObject.accessType}' to 'none' as a fallback`);
+                responseObject.accessType = 'none';
+            }
+        }
+
+        console.log("FINAL RESPONSE OBJECT:", JSON.stringify({
+            accessType: responseObject.accessType,
+            canUseAI: responseObject.canUseAI,
+            hasAdvisees: responseObject.advisees?.length > 0,
+            adviseeCount: responseObject.advisees?.length || 0
+        }));
+
+        return NextResponse.json(responseObject);
 
     } catch (error: any) {
         console.error("Error in /api/studentdata GET:", error.message || error);
@@ -695,15 +743,16 @@ async function checkAccessPermissions(
         hasAccess: false,
         accessReason: '',
         studentIdsWithAccess: [],
-        hasFullAccess: false
+        hasFullAccess: false,
+        canUseAI: false
     };
     
     try {
         // Fetch Access sheet with correct name
         const accessSheetName = 'Access';
-        const accessRange = `${accessSheetName}!A2:E`;
+        const accessRange = `${accessSheetName}!A2:F`; // UPDATED: Changed from A2:E to A2:F to include the UseAI column
         
-        console.log(`Fetching Access data from ${accessRange}`);
+        console.log(`Fetching Access data from ${accessRange} (includes UseAI column F)`);
         const accessResponse = await sheets.spreadsheets.values.get({
             spreadsheetId,
             range: accessRange,
@@ -713,6 +762,12 @@ async function checkAccessPermissions(
         if (!accessRows || accessRows.length === 0) {
             console.log('No data found in Access sheet');
             return result;
+        }
+        
+        console.log(`Access sheet data received: ${accessRows.length} rows`);
+        // If first row exists, log its structure to debug column count
+        if (accessRows.length > 0) {
+            console.log(`First row has ${accessRows[0].length} columns. Data:`, JSON.stringify(accessRows[0]));
         }
         
         // Find entries for this user
@@ -743,6 +798,20 @@ async function checkAccessPermissions(
             result.hasFullAccess = true;
             accessReasons.push('AccessAllStudents');
             
+            // CRITICAL FIX: Check UseAI permission on ALL entries before returning
+            // At least one entry must have UseAI=Yes to grant AI access
+            for (const entry of userEntries) {
+                // Check if the entry has UseAI=Yes at index 5
+                const useAI = entry[5];
+                console.log(`Checking UseAI permission in entry: UseAI=${useAI} (${typeof useAI})`);
+                
+                if (useAI === 'Yes') {
+                    result.canUseAI = true;
+                    console.log(`User ${userEmail} has UseAI permission GRANTED`);
+                    break; // Once permission is granted, no need to check more entries
+                }
+            }
+            
             // If checking for a specific student, we can return immediately
             if (specificStudentId) {
                 result.studentIdsWithAccess = [specificStudentId];
@@ -768,16 +837,31 @@ async function checkAccessPermissions(
                 Department: entry[1] || undefined,
                 Faculty: entry[2] || undefined,
                 AccessAllStudents: entry[3] || undefined,
-                Student: entry[4] || undefined
+                Student: entry[4] || undefined,
+                UseAI: entry[5] || undefined  // Include the UseAI field, which should be at index 5
             };
             
-            // Check AccessAllStudents - this overrides everything else
+            // Enhanced logging for Access permissions
+            console.log(`DEBUG Access entry for ${userEmail}:`, JSON.stringify(accessEntry));
+            console.log(`DEBUG UseAI permission value: "${accessEntry.UseAI}" (${typeof accessEntry.UseAI})`);
+            console.log(`DEBUG raw UseAI value at index 5: "${entry[5]}" (${typeof entry[5]})`);
+            
+            // Check for UseAI permission
+            if (accessEntry.UseAI === 'Yes') {
+                result.canUseAI = true;
+                console.log(`User ${userEmail} has UseAI permission GRANTED`);
+            } else {
+                console.log(`User ${userEmail} does NOT have UseAI permission. UseAI = "${accessEntry.UseAI}"`);
+            }
+            
+            // Check AccessAllStudents - this overrides everything else for access, but NOT for UseAI permission
             if (accessEntry.AccessAllStudents === 'Yes') {
                 result.hasAccess = true;
                 result.hasFullAccess = true;
                 accessReasons.push('AccessAllStudents');
                 
                 // If checking for a specific student, we can return immediately
+                // but keep the canUseAI value that was already determined
                 if (specificStudentId) {
                     result.studentIdsWithAccess = [specificStudentId];
                     result.accessReason = accessReasons.join(', ');
@@ -827,7 +911,7 @@ async function checkAccessPermissions(
                         .filter(row => row[10] && row[10].trim())
                         .map(row => row[10].trim())
                 );
-                // @ts-ignore: Module resolution errors suppressed as app works in production
+                // Convert Set to Array before logging to avoid TypeScript errors
                 console.log(`Available departments in student rows: ${Array.from(availableDepartments).join(', ')}`);
                 
                 // Check each student row for case-insensitive department match
@@ -871,7 +955,7 @@ async function checkAccessPermissions(
                         .filter(row => row[11] && row[11].trim())
                         .map(row => row[11].trim())
                 );
-                // @ts-ignore: Module resolution errors suppressed as app works in production
+                // Convert Set to Array before logging to avoid TypeScript errors
                 console.log(`Available faculties in student rows: ${Array.from(availableFaculties).join(', ')}`);
                 
                 // Check each student row for case-insensitive faculty match

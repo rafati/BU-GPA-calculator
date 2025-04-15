@@ -1,5 +1,5 @@
 Okay, here is a consolidated summary of the requirements for the Bethlehem University GPA Calculator, reflecting all the logic discussions and decisions, particularly the final refined logic for the Target GPA calculation (based on v34). This document should serve as a comprehensive reference.
-Version 0.1.12
+Version 0.1.14
 
 **--- Consolidated Requirements: Bethlehem University GPA Calculator (v34 Logic) ---**
 
@@ -666,5 +666,62 @@ This document should now be a stable reference point capturing the full requirem
     *   Provides clear separation of concerns between maintenance and new features
     *   Allows for thorough testing of AI features before production deployment
     *   Maintains a consistent release cadence for critical updates
+
+
+---
+
+**12. AI Feature Access Control**
+
+*   **FR_ACCESS1: User-Level AI Feature Permissions:**
+    *   **FR_ACCESS1.1: Permission Configuration:**
+        *   AI feature availability is controlled via a dedicated `UseAI` column (column F) in the Access spreadsheet
+        *   Values in this column determine whether a user can access AI features:
+            * "Yes" - User has permission to use AI features
+            * Any other value or empty - User does not have permission to use AI features
+        *   This permission is independent of other access control mechanisms (student access, faculty access, etc.)
+    
+    *   **FR_ACCESS1.2: Permission Checking Logic:**
+        *   The system checks for AI permissions in the same Access sheet used for student access control
+        *   Permissions are evaluated for each user email when they log in to the system
+        *   The `canUseAI` flag is initialized as `false` by default and set to `true` only when explicit permission is granted
+        *   Permission checking is implemented with precedence handling to ensure proper evaluation when users have multiple access entries
+    
+    *   **FR_ACCESS1.3: Integration with Other Access Controls:**
+        *   The AI permission check is integrated with existing access control mechanisms
+        *   For users with `AccessAllStudents=Yes` privilege, the system ensures AI permissions are still evaluated
+        *   Early returns in access checking logic preserve the `canUseAI` permission state
+        *   Permission checking is performed for all users regardless of their access level or role
+
+*   **FR_ACCESS2: Frontend Integration:**
+    *   **FR_ACCESS2.1: Permission Propagation:**
+        *   The `canUseAI` permission flag is passed from backend to frontend as part of the user session data
+        *   This flag controls the visibility of AI-related UI elements throughout the application
+        *   The permission state is maintained across page refreshes and navigation
+    
+    *   **FR_ACCESS2.2: Conditional UI Rendering:**
+        *   The AI button is only visible to users with the `canUseAI` permission
+        *   The entire AI interface is hidden from users without permission
+        *   No AI-related functionality is accessible without the proper permission
+    
+    *   **FR_ACCESS2.3: Access Type Standardization:**
+        *   The system standardizes access types returned to the frontend to ensure consistent UI rendering
+        *   Valid access types are limited to "direct", "advisor", or "none"
+        *   The system ensures the correct access type is returned based on user permissions and available students
+
+*   **FR_ACCESS3: Permission Diagnostics and Monitoring:**
+    *   **FR_ACCESS3.1: Permission Logging:**
+        *   The system logs detailed information about permission checks, including:
+            * Access entry data received from the spreadsheet
+            * UseAI permission value detected
+            * Final permission state determination
+            * Access type assigned to the user
+        *   These logs facilitate troubleshooting of permission-related issues
+    
+    *   **FR_ACCESS3.2: Response Validation:**
+        *   Before sending the final response, the system validates that:
+            * The access type is one of the expected values
+            * The canUseAI flag is correctly set based on permissions
+            * Available students are properly included in the response
+        *   If validation fails, the system applies appropriate corrections to ensure UI consistency
 
 

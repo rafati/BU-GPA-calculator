@@ -66,6 +66,7 @@ interface StudentDataResponse {
     advisees?: AdviseeInfo[] | null;
     isOverride?: boolean;
     overrideTargetEmail?: string;
+    canUseAI?: boolean;
 }
 // Add this interface near the other interfaces
 interface PlannerCourse {
@@ -122,7 +123,8 @@ function HomePageContent() {
                     overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0),
                     majorCredits: editableBaseMajorCredits,
                     majorPoints: editableBaseMajorPoints,
-                    majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)
+                    majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0),
+                    note: baseDataNote  // Add the baseDataNote to baseData
                 },
                 semesterGPA: semesterGPAInfo,
                 projectedGPA: projectedGPAInfo,
@@ -143,7 +145,8 @@ function HomePageContent() {
                     overallGPA: calculateGPA(parseFloat(editableBaseOverallPoints) || 0, parseInt(editableBaseOverallCredits, 10) || 0),
                     majorCredits: editableBaseMajorCredits,
                     majorPoints: editableBaseMajorPoints,
-                    majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0)
+                    majorGPA: calculateGPA(parseFloat(editableBaseMajorPoints) || 0, parseInt(editableBaseMajorCredits, 10) || 0),
+                    note: baseDataNote  // Add the baseDataNote to baseData
                 },
                 semesterGPA: semesterGPAInfo,
                 projectedGPA: projectedGPAInfo,
@@ -260,6 +263,9 @@ function HomePageContent() {
 
     // Add analytics tracking
     const { trackLogin, trackStudentLoad, trackShare, trackPdfDownload } = useAnalytics();
+
+    // Add a state variable to track the AI permission
+    const [canUseAI, setCanUseAI] = useState<boolean>(false);
 
     // --- Effect to handle responsive behavior for Base Cumulative Data expansion ---
     useEffect(() => {
@@ -402,9 +408,30 @@ function HomePageContent() {
 
                     // Store the raw response and set access type/advisee list
                     setStudentDataSource(data); // Store raw response
+                    
+                    console.log(`Setting accessType to: ${data.accessType}`);
                     setAccessType(data.accessType);
+                    console.log(`Setting isOverrideActive to: ${data.isOverride ?? false}`);
                     setIsOverrideActive(data.isOverride ?? false);
-                    setAdvisees(data.advisees || null);
+                    
+                    // Check if we have advisees and log it
+                    if (Array.isArray(data.advisees) && data.advisees.length > 0) {
+                        console.log(`Received ${data.advisees.length} advisees, setting advisee list`);
+                        setAdvisees(data.advisees);
+                    } else {
+                        console.log(`No advisees in response or empty array: ${JSON.stringify(data.advisees)}`);
+                        setAdvisees(null);
+                    }
+                    
+                    // Enhanced logging for AI permissions
+                    console.log(`AI permission check: canUseAI=${data.canUseAI}, type=${typeof data.canUseAI}, accessType=${data.accessType}`);
+                    console.log(`Student data response:`, JSON.stringify({
+                        accessType: data.accessType,
+                        canUseAI: data.canUseAI,
+                        hasAdvisees: Array.isArray(data.advisees) && data.advisees.length > 0,
+                        adviseeCount: Array.isArray(data.advisees) ? data.advisees.length : 0
+                    }));
+                    setCanUseAI(data.canUseAI || false); // Set canUseAI flag
 
                     // --- START Integrated Planner Initialization ---
                     console.log(`Planner Init Trigger: accessType=${data.accessType}, isPlannerInitialized=${isPlannerInitialized}, gradeScaleStatus=${gradeScaleStatus}, isLoadedFromShareLink=${isLoadedFromShareLink}`);
@@ -2432,13 +2459,15 @@ function HomePageContent() {
                                         >
                                             <FaFilePdf className="mr-1" /> PDF
                                         </button>
-                                        {/* AI Advisor Button */}
-                                        <button
-                                            onClick={() => setIsAIAdvisorOpen(true)}
-                                            className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-xs font-semibold flex items-center"
-                                        >
-                                            <FaRobot className="mr-1" /> AI
-                                        </button>
+                                        {/* AI Advisor Button - Conditionally rendered based on permission */}
+                                        {canUseAI && (
+                                            <button
+                                                onClick={() => setIsAIAdvisorOpen(true)}
+                                                className="px-2 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-xs font-semibold flex items-center"
+                                            >
+                                                <FaRobot className="mr-1" /> AI
+                                            </button>
+                                        )}
                                         {/* Share Button */}
                                         <button
                                             onClick={handleShare}
