@@ -268,7 +268,9 @@ const GpaResultsCard: React.FC<GpaResultsCardProps> = ({
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-medium text-sm text-gray-800">Required Semester GPA</h3>
-              <span className="text-xs text-gray-500">To reach target</span>
+              <span className="text-xs text-gray-500">
+                To reach {parseFloat(shareParams?.tO || '2.0').toFixed(3)} cum. GPA and {parseFloat(shareParams?.tM || '2.0').toFixed(3)} major GPA target
+              </span>
             </div>
             
             <div className="grid grid-cols-2 gap-3">
