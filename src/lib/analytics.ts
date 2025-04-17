@@ -15,7 +15,7 @@ export const EventType = {
 export type EventType = typeof EventType[keyof typeof EventType];
 
 // Define event data interface
-interface EventData {
+export interface EventData {
   sessionId: string;
   eventType: EventType;
   userEmail?: string | null;
@@ -42,8 +42,8 @@ export function parseUserAgent(userAgent: string) {
   };
 }
 
-// Track event
-export async function trackEvent({
+// Track event in MySQL database
+async function trackEventInMySql({
   sessionId,
   eventType,
   userEmail = null,
@@ -87,8 +87,40 @@ export async function trackEvent({
     );
     return result;
   } catch (error) {
-    console.error('Failed to track event:', error);
+    console.error('Failed to track event in MySQL:', error);
     // Just log the error but don't fail the application
+    return null;
+  }
+}
+
+// Track event via API (will handle either MySQL or Google Sheets server-side)
+async function trackEventViaApi(eventData: EventData) {
+  try {
+    const response = await fetch('/api/analytics', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(eventData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Analytics tracking failed: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error tracking event via API:', error);
+    return null;
+  }
+}
+
+// Track event using the appropriate method based on environment configuration
+export async function trackEvent(eventData: EventData) {
+  try {
+    return trackEventViaApi(eventData);
+  } catch (error) {
+    console.error('Analytics tracking error:', error);
     return null;
   }
 }
