@@ -284,10 +284,10 @@ const GpaResultsCard: React.FC<GpaResultsCardProps> = ({
                   {extractGpaNumber(requiredSemesterInfo.overallDisplay).value}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Based on {requiredSemesterInfo.finalCumulativeOverallCredits?.toFixed(1) ?? '0'} GPA credits
+                  Based on {Math.round(requiredSemesterInfo.finalCumulativeOverallCredits || 0)} total credits
                 </div>
                 <div className="text-xs text-gray-500">
-                  Based on {extractSemesterCredits(requiredSemesterInfo.overallDisplay).semester} GPA credits
+                  Based on {extractSemesterCredits(requiredSemesterInfo.overallDisplay).semester} semester credits
                 </div>
               </div>
               
@@ -301,10 +301,10 @@ const GpaResultsCard: React.FC<GpaResultsCardProps> = ({
                   {extractGpaNumber(requiredSemesterInfo.majorDisplay).value}
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Based on {requiredSemesterInfo.finalCumulativeMajorCredits?.toFixed(1) ?? '0'} GPA credits
+                  Based on {Math.round(requiredSemesterInfo.finalCumulativeMajorCredits || 0)} major credits
                 </div>
                 <div className="text-xs text-gray-500">
-                  Based on {extractSemesterCredits(requiredSemesterInfo.majorDisplay).semester} Major GPA credits
+                  Based on {extractSemesterCredits(requiredSemesterInfo.majorDisplay).semester} major semester credits
                 </div>
               </div>
             </div>
