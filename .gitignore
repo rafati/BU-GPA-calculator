@@ -48,3 +48,6 @@ test-env-key.js
 test-gemini-api.js
 test-gemini-api-experimental.js
 .cursor/
+
+# old files
+Requirements
