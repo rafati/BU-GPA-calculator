@@ -57,9 +57,21 @@ async function updateLoginInSheets(userEmail: string) {
       return;
     }
 
+    // Log all LOGIN events to help debug
+    console.log("All LOGIN events in sheet:");
+    rows.forEach((row, index) => {
+      if (row[2] === 'LOGIN') {
+        console.log(`Row ${index+1}: timestamp=${row[0]}, session=${row[1]}, email=${row[3] || 'none'}`);
+      }
+    });
+
     // Find the most recent LOGIN event without an email (or with an empty email)
     // Starting from the end of the sheet (most recent events first)
-    for (let i = rows.length - 1; i >= 0; i--) {
+    let loginRowsUpdated = 0;
+    
+    // Update the 3 most recent LOGIN events without emails
+    // This ensures we don't miss the correct one if there are multiple pending logins
+    for (let i = rows.length - 1; i >= 0 && loginRowsUpdated < 3; i--) {
       const row = rows[i];
       if (row[2] === 'LOGIN' && (!row[3] || row[3] === '')) {
         // This is a login event without an email, update it
@@ -72,12 +84,14 @@ async function updateLoginInSheets(userEmail: string) {
             values: [[userEmail]]
           }
         });
-        console.log(`Updated login record with email for: ${userEmail} in Google Sheets`);
-        return;
+        console.log(`Updated LOGIN record with email for: ${userEmail} in Google Sheets at row ${i+1}`);
+        loginRowsUpdated++;
       }
     }
 
-    console.log("No recent login events found without an email.");
+    if (loginRowsUpdated === 0) {
+      console.log("No recent login events found without an email.");
+    }
   } catch (error) {
     console.error('Failed to update login in Google Sheets:', error);
   }

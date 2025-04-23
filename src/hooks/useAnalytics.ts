@@ -23,7 +23,11 @@ export function useAnalytics() {
         return;
       }
 
-      const response = await fetch('/api/analytics', {
+      // Get the base URL for API requests
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+      const apiUrl = `${baseUrl}/api/analytics`;
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

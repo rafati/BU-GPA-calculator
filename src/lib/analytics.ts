@@ -28,18 +28,109 @@ export interface EventData {
   additionalData?: Record<string, any> | null;
 }
 
-// Parse user agent
+// Parse user agent with improved detection
 export function parseUserAgent(userAgent: string) {
-  const parser = new UAParser(userAgent);
-  const browser = parser.getBrowser();
-  const os = parser.getOS();
-  const device = parser.getDevice();
+  // Handle empty or undefined user agent
+  if (!userAgent || userAgent.trim() === '') {
+    console.warn('Empty user agent string provided to parseUserAgent');
+    return {
+      browser: 'Unknown Browser',
+      deviceType: 'desktop',
+      os: 'Unknown OS'
+    };
+  }
 
-  return {
-    browser: `${browser.name || 'Unknown'} ${browser.version || ''}`.trim(),
-    deviceType: device.type || 'desktop',
-    os: `${os.name || 'Unknown'} ${os.version || ''}`.trim(),
-  };
+  console.log('Parsing user agent:', userAgent);
+  
+  // Initialize parser with complete UA string
+  const parser = new UAParser(userAgent);
+  
+  // Get browser information
+  const browserInfo = parser.getBrowser();
+  const browserName = browserInfo.name || 'Unknown';
+  const browserVersion = browserInfo.version || '';
+  let browser = browserName !== 'Unknown' ? 
+    `${browserName} ${browserVersion}`.trim() : 
+    detectBrowserFromUA(userAgent);
+  
+  // Get OS information
+  const osInfo = parser.getOS();
+  const osName = osInfo.name || 'Unknown';
+  const osVersion = osInfo.version || '';
+  let os = osName !== 'Unknown' ? 
+    `${osName} ${osVersion}`.trim() : 
+    detectOSFromUA(userAgent);
+  
+  // Get device information
+  const deviceInfo = parser.getDevice();
+  let deviceType = deviceInfo.type || detectDeviceTypeFromUA(userAgent);
+  
+  // If deviceType is still not detected, make a best guess based on UA
+  if (!deviceType) {
+    if (userAgent.includes('Mobile') || userAgent.includes('Android')) {
+      deviceType = 'mobile';
+    } else if (userAgent.includes('iPad') || userAgent.includes('Tablet')) {
+      deviceType = 'tablet';
+    } else {
+      deviceType = 'desktop';
+    }
+  }
+  
+  // Ensure we always have values for all fields
+  browser = browser || 'Unknown Browser';
+  os = os || 'Unknown OS';
+  deviceType = deviceType || 'desktop';
+  
+  console.log('UA Parser results:', { 
+    browserInfo, 
+    osInfo, 
+    deviceInfo,
+    finalResult: { browser, os, deviceType }
+  });
+  
+  return { browser, deviceType, os };
+}
+
+// Helper function to detect browser when UAParser fails
+function detectBrowserFromUA(ua: string): string {
+  ua = ua.toLowerCase();
+  
+  if (ua.includes('firefox')) return 'Firefox';
+  if (ua.includes('edg/')) return 'Edge';
+  if (ua.includes('chrome')) return 'Chrome';
+  if (ua.includes('safari') && !ua.includes('chrome')) return 'Safari';
+  if (ua.includes('opera') || ua.includes('opr/')) return 'Opera';
+  if (ua.includes('msie') || ua.includes('trident/')) return 'Internet Explorer';
+  
+  return 'Unknown Browser';
+}
+
+// Helper function to detect OS when UAParser fails
+function detectOSFromUA(ua: string): string {
+  ua = ua.toLowerCase();
+  
+  if (ua.includes('windows')) return 'Windows';
+  if (ua.includes('macintosh') || ua.includes('mac os x')) return 'MacOS';
+  if (ua.includes('linux')) return 'Linux';
+  if (ua.includes('android')) return 'Android';
+  if (ua.includes('iphone') || ua.includes('ipad')) return 'iOS';
+  
+  return 'Unknown OS';
+}
+
+// Helper function to detect device type when UAParser fails
+function detectDeviceTypeFromUA(ua: string): string {
+  ua = ua.toLowerCase();
+  
+  if (ua.includes('iphone') || ua.includes('android') && !ua.includes('tablet') && !ua.includes('ipad')) {
+    return 'mobile';
+  }
+  
+  if (ua.includes('ipad') || ua.includes('tablet')) {
+    return 'tablet';
+  }
+  
+  return 'desktop';
 }
 
 // Track event in MySQL database
@@ -93,10 +184,34 @@ async function trackEventInMySql({
   }
 }
 
+// Get the base URL for API requests, handling both client and server environments
+function getBaseUrl() {
+  // In the browser, use the current origin
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  
+  // In server-side code, use the environment variable or a default
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  
+  // Check for Vercel deployment URL
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  
+  // Fallback for development
+  return 'http://localhost:3000';
+}
+
 // Track event via API (will handle either MySQL or Google Sheets server-side)
 async function trackEventViaApi(eventData: EventData) {
   try {
-    const response = await fetch('/api/analytics', {
+    const baseUrl = getBaseUrl();
+    const apiUrl = `${baseUrl}/api/analytics`;
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

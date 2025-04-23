@@ -84,6 +84,19 @@ async function trackEventInSheets(eventData: EventData) {
       additionalData = null,
     } = eventData;
 
+    // Debug logging to see what values we're receiving
+    console.log('Tracking event in Google Sheets with data:', {
+      sessionId,
+      eventType,
+      userEmail,
+      studentId,
+      browser,
+      deviceType,
+      os,
+      ipAddress,
+      referrer
+    });
+
     // Parse credentials for Google Sheets
     let credentials;
     try {
@@ -110,7 +123,7 @@ async function trackEventInSheets(eventData: EventData) {
       userEmail || '',
       studentId || '',
       browser || '',
-      deviceType || '',
+      deviceType || 'desktop', // Default to desktop if not provided
       os || '',
       ipAddress || '',
       referrer || '',
@@ -138,6 +151,9 @@ async function trackEventInSheets(eventData: EventData) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Debug the request headers
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+    
     const session = await getServerSession(authOptions);
     const body = await req.json();
     const { eventType, studentId, additionalData, ...restOfBody } = body;
@@ -166,8 +182,12 @@ export async function POST(req: NextRequest) {
       sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     }
     
-    // Parse user agent
-    const { browser, deviceType, os } = parseUserAgent(userAgent);
+    // Parse user agent with the improved function
+    const parsedUA = parseUserAgent(userAgent);
+    const { browser, deviceType, os } = parsedUA;
+    
+    // Log what we parsed
+    console.log('Parsed UA data:', parsedUA);
     
     // Create response
     const response = NextResponse.json({ success: true });
@@ -189,13 +209,16 @@ export async function POST(req: NextRequest) {
       eventType: eventType as EventType,
       userEmail: session?.user?.email || restOfBody.userEmail || null,
       studentId: studentId || null,
-      browser,
-      deviceType,
-      os,
+      browser: browser || restOfBody.browser || null,
+      deviceType: deviceType || restOfBody.deviceType || 'desktop',
+      os: os || restOfBody.os || null,
       ipAddress,
       referrer,
       additionalData,
     };
+    
+    // Log the final event data
+    console.log('Final event data being stored:', eventData);
     
     try {
       // Determine which storage method to use based on environment variables
