@@ -1,20 +1,24 @@
-Okay, here is a consolidated summary of the requirements for the Bethlehem University GPA Calculator, reflecting all the logic discussions and decisions, particularly the final refined logic for the Target GPA calculation (based on v34). This document should serve as a comprehensive reference.
-Version 0.1.17
+# Bethlehem University GPA Calculator Requirements (v34 Logic)
+> Version 0.1.17
+
+This consolidated document reflects all logic discussions and decisions, particularly the final refined logic for the Target GPA calculation.
+
+## 1. Purpose & Goal
+
+### Primary Goal
+To provide Bethlehem University students (identified via Google Login) with a tool to:
+- View their current official cumulative GPA (Overall and Major) based on administrative records.
+- Load their recent/current course registrations into an interactive calculator/planner interface.
+- Modify this planner data (edit courses, add hypothetical courses, remove courses) for planning and "what-if" analysis according to Bethlehem University's grading policies.
+- Calculate the GPA for the courses currently in the planner interface based on selected grades.
+- Calculate the projected Cumulative Overall and Major GPAs based on their official cumulative data plus the state of the planner.
+- **Automatically** calculate the required average Semester GPA needed across relevant courses listed in the planner (those expected to receive a GPA-affecting grade) to achieve user-defined target Cumulative GPAs (defaulting to 2.0).
+
+### Secondary Goals
+- Provide a flexible planning tool starting from actual registration data.
+- Help students understand the potential impact of grade changes or adding/dropping courses.
 
 **--- Consolidated Requirements: Bethlehem University GPA Calculator (v34 Logic) ---**
-
-**1. Purpose & Goal**
-
-*   **Primary Goal:** To provide Bethlehem University students (identified via Google Login) with a tool to:
-    *   View their current official cumulative GPA (Overall and Major) based on administrative records.
-    *   Load their recent/current course registrations into an interactive calculator/planner interface.
-    *   Modify this planner data (edit courses, add hypothetical courses, remove courses) for planning and "what-if" analysis according to Bethlehem University's grading policies.
-    *   Calculate the GPA for the courses currently in the planner interface based on selected grades.
-    *   Calculate the projected Cumulative Overall and Major GPAs based on their official cumulative data plus the state of the planner.
-    *   **Automatically** calculate the required average Semester GPA needed across relevant courses listed in the planner (those expected to receive a GPA-affecting grade) to achieve user-defined target Cumulative GPAs (defaulting to 2.0).
-*   **Secondary Goals:**
-    *   Provide a flexible planning tool starting from actual registration data.
-    *   Help students understand the potential impact of grade changes or adding/dropping courses.
 
 **2. Target Audience**
 
@@ -285,78 +289,78 @@ Version 0.1.17
 
 This document should now be a stable reference point capturing the full requirements and logic as discussed, including the latest UI optimization changes and GPA display formatting requirements.
 
-**9. Build Versioning System**
+## 9. Build Versioning System
 
-*   **FR_BUILD1: Automatic Version Incrementing:**
-    *   The application uses semantic versioning (MAJOR.MINOR.PATCH) for tracking changes
-    *   The system automatically increments the PATCH version number (x.y.Z) when:
-        * The application is built for production via the `prebuild` npm script (when SKIP_VERSION_INCREMENT is not set to 'true')
-        * A developer manually runs the version update script
-        * A developer uses the provided `prepush` script before pushing to the repository
-    *   Version numbers are managed in multiple locations to ensure consistency:
-        * `package.json` file (primary source of version)
-        * `Requirements` file (updated automatically to match package.json)
-        * Environment variables for client and server access
+### FR_BUILD1: Automatic Version Incrementing
+- The application uses semantic versioning (MAJOR.MINOR.PATCH) for tracking changes
+- The system automatically increments the PATCH version number (x.y.Z) when:
+  * The application is built for production via the `prebuild` npm script (when SKIP_VERSION_INCREMENT is not set to 'true')
+  * A developer manually runs the version update script
+  * A developer uses the provided `prepush` script before pushing to the repository
+- Version numbers are managed in multiple locations to ensure consistency:
+  * `package.json` file (primary source of version)
+  * `Requirements.md` file (updated automatically to match package.json)
+  * Environment variables for client and server access
 
-*   **FR_BUILD2: Build Information Tracking:**
-    *   The following information is captured with each build:
-        * Build version number (e.g., 0.1.2)
-        * Build date (YYYY-MM-DD format)
-        * Commit hash from Git (short form)
-    *   This information is stored in environment variables:
-        * Server-side: `BUILD_NUMBER`, `BUILD_DATE`, `COMMIT_HASH`
-        * Client-side: `NEXT_PUBLIC_BUILD_NUMBER`, `NEXT_PUBLIC_BUILD_DATE`, `NEXT_PUBLIC_COMMIT_HASH`
+### FR_BUILD2: Build Information Tracking
+- The following information is captured with each build:
+  * Build version number (e.g., 0.1.2)
+  * Build date (YYYY-MM-DD format)
+  * Commit hash from Git (short form)
+- This information is stored in environment variables:
+  * Server-side: `BUILD_NUMBER`, `BUILD_DATE`, `COMMIT_HASH`
+  * Client-side: `NEXT_PUBLIC_BUILD_NUMBER`, `NEXT_PUBLIC_BUILD_DATE`, `NEXT_PUBLIC_COMMIT_HASH`
 
-*   **FR_BUILD3: Version Display:**
-    *   The application displays the current version number and build date in the footer of every page
-    *   The version display includes:
-        * Version number from package.json
-        * Build date in YYYY-MM-DD format
-    *   The version information is displayed in small, unobtrusive text that doesn't interfere with the primary functionality
+### FR_BUILD3: Version Display
+- The application displays the current version number and build date in the footer of every page
+- The version display includes:
+  * Version number from package.json
+  * Build date in YYYY-MM-DD format
+- The version information is displayed in small, unobtrusive text that doesn't interfere with the primary functionality
 
-*   **FR_BUILD4: Development Tooling:**
-    *   Automated scripts to support version management:
-        * `update-build-number.js`: Increments the patch version and updates all relevant files
-        * `prepare-version-commit.js`: Stages changed files and prepares them for Git commit
-    *   NPM scripts to streamline the process:
-        * `npm run update-version`: Manually update version numbers
-        * `npm run prepush`: Update version and prepare for Git push
-        * `prebuild` (automatic): Update version before production builds
+### FR_BUILD4: Development Tooling
+- Automated scripts to support version management:
+  * `update-build-number.js`: Increments the patch version and updates all relevant files
+  * `prepare-version-commit.js`: Stages changed files and prepares them for Git commit
+- NPM scripts to streamline the process:
+  * `npm run update-version`: Manually update version numbers
+  * `npm run prepush`: Update version and prepare for Git push
+  * `prebuild` (automatic): Update version before production builds
 
-*   **FR_BUILD5: Build Data Access:**
-    *   Build information is accessible throughout the application via:
-        * Environment variables in server-side code
-        * `NEXT_PUBLIC_` prefixed environment variables in client-side code
-        * A dedicated `buildInfo.ts` module that handles environment differences
-    *   The system handles hydration differences between server and client environments to prevent React errors
+### FR_BUILD5: Build Data Access
+- Build information is accessible throughout the application via:
+  * Environment variables in server-side code
+  * `NEXT_PUBLIC_` prefixed environment variables in client-side code
+  * A dedicated `buildInfo.ts` module that handles environment differences
+- The system handles hydration differences between server and client environments to prevent React errors
 
-*   **FR_BUILD6: Version Consistency Between Environments:**
-    *   The application maintains version consistency between development and production environments:
-        * In development: Version increments only when developers explicitly run version update scripts
-        * In Vercel deployments: Version remains unchanged during builds via the SKIP_VERSION_INCREMENT=true flag
-    *   Regular git commits do NOT automatically change the version number
-    *   The commit hash is always updated regardless of version increment status
-    *   Specific commands for version management:
-        * `npm run update-version`: Updates version number without committing changes
-        * `npm run prepush`: Updates version number AND creates a commit with message "Bump version to X.Y.Z"
-        * Regular `git commit` and `git push` commands: Do NOT affect version numbers
+### FR_BUILD6: Version Consistency Between Environments
+- The application maintains version consistency between development and production environments:
+  * In development: Version increments only when developers explicitly run version update scripts
+  * In Vercel deployments: Version remains unchanged during builds via the SKIP_VERSION_INCREMENT=true flag
+- Regular git commits do NOT automatically change the version number
+- The commit hash is always updated regardless of version increment status
+- Specific commands for version management:
+  * `npm run update-version`: Updates version number without committing changes
+  * `npm run prepush`: Updates version number AND creates a commit with message "Bump version to X.Y.Z"
+  * Regular `git commit` and `git push` commands: Do NOT affect version numbers
 
-*   **FR_BUILD7: Version Management Process:**
-    *   **For routine code changes:**
-        1. Make code changes
-        2. Use standard `git commit` and `git push` commands
-        3. Version number remains unchanged
-        4. Commit hash updates in environment variables on next build
-    *   **For version increments:**
-        1. Make code changes
-        2. Run `npm run prepush` to increment version and create a commit
-        3. Run `git push` to push changes to remote repository
-        4. Vercel builds with the new version number
-    *   **For manual version control:**
-        1. Make code changes and commit them
-        2. Run `npm run update-version` to increment version without committing
-        3. Manually commit the version changes
-        4. Push all changes to the remote repository
+### FR_BUILD7: Version Management Process
+- **For routine code changes:**
+  1. Make code changes
+  2. Use standard `git commit` and `git push` commands
+  3. Version number remains unchanged
+  4. Commit hash updates in environment variables on next build
+- **For version increments:**
+  1. Make code changes
+  2. Run `npm run prepush` to increment version and create a commit
+  3. Run `git push` to push changes to remote repository
+  4. Vercel builds with the new version number
+- **For manual version control:**
+  1. Make code changes and commit them
+  2. Run `npm run update-version` to increment version without committing
+  3. Manually commit the version changes
+  4. Push all changes to the remote repository
 
 **10. Future Development Options**
 
@@ -470,6 +474,51 @@ This document should now be a stable reference point capturing the full requirem
             *   Phase 1: Record initial login with device information via middleware
             *   Phase 2: Update login record with user email after authentication via signIn event
         *   **Login-Specific Fields:** Ensure browser, device type, OS, and IP data are accurately captured
+
+## 11. Development Environment
+
+### Development Setup Requirements
+- **Node.js Version:** 18.x or higher
+- **npm Version:** 11.2.0 or higher
+- **Next.js Version:** 14.1.0
+- **Environment Variables:** Complete set of environment variables in `.env.local`
+- **Editor Configuration:** Appropriate TypeScript and ESLint configuration
+
+### Common Development Issues
+
+#### Duplicate Page Detection
+- The Next.js router may warn about duplicate pages that resolve to the same route
+- Example: Both `pages/not-found.tsx` and `pages/not-found.js` both resolve to `/not-found`
+- Resolution: Remove or rename one of the conflicting files
+
+#### Module Build Failures
+- Node.js built-in modules using the `node:` prefix (e.g., `node:process`) may cause build errors in the browser environment
+- These typically appear in dependency packages used by Google API libraries
+- Resolution: May require custom webpack configuration or alternative import strategies
+
+#### Fast Refresh Errors
+- Runtime errors during development can cause full page reloads instead of fast refresh
+- Check component rendering logic, especially in lifecycle methods or React hooks
+- Resolution: Fix the underlying component errors causing the refresh failures
+
+#### Webpack Cache Errors
+- Errors like `ENOENT: no such file or directory, rename... .next/cache/webpack/...`
+- Resolution: Clear the `.next` cache directory and restart the development server
+  ```bash
+  rm -rf .next
+  npm run dev
+  ```
+
+#### API Request Handling
+- Ensure API routes properly handle CORS and authentication
+- Test API endpoints separately from the UI to isolate issues
+- Use browser developer tools to inspect network requests and responses
+
+### Testing Requirements
+- Test on different browsers (Chrome, Firefox, Safari)
+- Test on mobile devices or using browser device emulation
+- Verify PDF generation and printing functionality
+- Test with different screen sizes to ensure responsive design
 
 ---
 

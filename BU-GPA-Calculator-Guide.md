@@ -10,13 +10,15 @@ The BU GPA Calculator is a Next.js-based web application designed to help Bethle
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| Next.js | 13+ (App Router) | React framework for server and client components |
+| Next.js | 14.1.0 (App Router) | React framework for server and client components |
 | React | 18+ | UI library |
 | TypeScript | 5.0+ | Static type checking |
 | Tailwind CSS | 3.3+ | Utility-first CSS framework for styling |
 | NextAuth.js | 4.x | Authentication solution with Google provider |
 | Google API | Various | Accessing Google Sheets data |
 | Vercel | N/A | Deployment platform |
+| Node.js | 18+ | JavaScript runtime |
+| npm | 11.2.0+ | Package manager |
 
 ### Key Libraries
 
@@ -310,6 +312,21 @@ The application uses a custom versioning system:
 2. **Auto-incrementing**: PATCH version auto-increments on production builds
 3. **Build Information**: Version number, build date, and commit hash are tracked
 4. **Environment Access**: Build info is accessible via environment variables
+5. **Version Management**: 
+   - `npm run update-version`: Updates version number without committing changes
+   - `npm run prepush`: Updates version number AND creates a commit with message "Bump version to X.Y.Z"
+   - Regular `git commit` and `git push` commands: Do NOT affect version numbers
+
+### Git Workflow
+
+When working with the repository:
+
+1. Make code changes locally
+2. Review changes before committing
+3. Use descriptive commit messages that explain changes
+4. For version increments, use the provided npm scripts
+5. Test thoroughly before pushing to the repository
+6. Consider creating feature branches for significant changes
 
 ## Troubleshooting Guide
 
@@ -324,6 +341,9 @@ The application uses a custom versioning system:
 | Analytics tracking failure | Database connection issues | Check DATABASE_URL, verify connection in analytics.ts |
 | Advisor selection not working | Class Access sheet issues | Verify Class Access sheet format and permissions |
 | Shareable link issues | Base URL configuration | Check Config sheet for baseUrl setting |
+| Duplicate page detection | Multiple files resolving to same route | Look for duplicate files (e.g., pages/not-found.tsx and pages/not-found.js both resolving to /not-found) |
+| Module build failures | Incompatible Node.js imports | Check for "node:" scheme imports that may need to be modified for browser compatibility |
+| Fast Refresh errors | Runtime errors in React components | Check component lifecycle methods and effect dependencies for errors |
 
 ### Runtime Error Handling
 
@@ -333,6 +353,7 @@ The application implements error handling at several levels:
 2. **React Components**: Error states for async operations
 3. **Data Fetching**: Status tracking (`idle`, `loading`, `success`, `error`)
 4. **Form Validation**: Input validation to prevent calculation errors
+5. **Next.js Build Issues**: Watch for webpack caching errors in development that may require clearing the .next cache
 
 ### Performance Considerations
 
@@ -342,6 +363,7 @@ Key performance optimization strategies:
 2. **Conditional Rendering**: Components render only when data is ready
 3. **GPA Calculations**: Optimized to avoid redundant operations
 4. **Data Fetching**: Sheets API calls minimized and cached where possible
+5. **Development Mode**: Be aware that development mode may show different performance characteristics than production builds
 
 ## Extension Points
 
