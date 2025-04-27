@@ -5,7 +5,7 @@ import { checkAIEnvironment, logAIAvailability } from "./checkEnvironment";
 const isAIAvailable = logAIAvailability();
 
 // Initialize the Gemini API client
-const apiKey = process.env.GOOGLE_AI_API_KEY || '';
+const apiKey = process.env.GEMINI_API_KEY || '';
 const genAI = new GoogleGenerativeAI(apiKey);
 
 // Debug logging to help troubleshoot Vercel deployment
