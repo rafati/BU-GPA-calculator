@@ -163,16 +163,16 @@ export const authOptions = {
           if (useMySQL) {
             // Use MySQL to update the login record
             console.log("Using MySQL to update login record");
-            await query(
-              `UPDATE events 
-               SET user_email = ? 
-               WHERE event_type = 'LOGIN' 
-               AND (user_email IS NULL OR user_email = '')
-               ORDER BY id DESC 
-               LIMIT 1`,
-              [user.email]
-            );
-            console.log("Updated login record with email for:", user.email);
+          await query(
+            `UPDATE events 
+             SET user_email = ? 
+             WHERE event_type = 'LOGIN' 
+             AND (user_email IS NULL OR user_email = '')
+             ORDER BY id DESC 
+             LIMIT 1`,
+            [user.email]
+          );
+          console.log("Updated login record with email for:", user.email);
           } else {
             // Use Google Sheets to update the login record
             console.log("Using Google Sheets to update login record");

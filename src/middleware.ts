@@ -115,20 +115,20 @@ export async function middleware(request: NextRequest) {
       // Track login event by calling the API route instead of direct database access
       try {
         const trackingResponse = await fetch(`${baseUrl}/api/login-track`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
             'User-Agent': userAgent // Pass the original user agent
-          },
-          body: JSON.stringify({
-            sessionId,
-            browser,
-            deviceType,
-            os,
-            ipAddress,
+        },
+        body: JSON.stringify({
+          sessionId,
+          browser,
+          deviceType,
+          os,
+          ipAddress,
             referrer,
             originalUserAgent: userAgent // Include the original UA string for debugging
-          }),
+        }),
         });
         
         if (!trackingResponse.ok) {
