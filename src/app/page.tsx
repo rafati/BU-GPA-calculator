@@ -2163,14 +2163,6 @@ function HomePageContent() {
                         <div className="flex justify-center items-center h-full text-gray-600">Loading access data...</div>
                     )}
 
-                    {accessType === 'none' && (
-                        <div className="flex flex-col justify-center items-center h-full text-center">
-                            <h2 className="text-xl font-semibold text-red-600 mb-4">Access Denied</h2>
-                            <p className="text-gray-700">Student data not found for the current user, or access is not permitted.</p>
-                            {/* Optionally add more info or contact details here */}
-                </div>
-            )}
-
                     {accessType === 'advisor' && (
                         <div className="max-w-md mx-auto mt-10 p-6 border rounded-lg shadow-md bg-white">
                             <h2 className="text-xl font-medium text-bu-blue mb-4">Select Student</h2>
@@ -2263,7 +2255,7 @@ function HomePageContent() {
                  </div>
              )}
                     
-                    {accessType === 'direct' && (
+                    {(accessType === 'direct' || accessType === 'none') && (
                         // Calculator content - two-column layout 
                         <div className="flex flex-col lg:flex-row gap-6">
                             {/* Left Column */}
