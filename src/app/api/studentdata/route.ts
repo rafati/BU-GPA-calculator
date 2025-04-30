@@ -676,7 +676,7 @@ export async function GET(request: NextRequest) {
         // Create the response object
         const responseObject = {
             accessType: accessType, // Use accessType which should be 'direct', 'advisor', or 'none'
-            studentData: studentRecord,
+            student: studentRecord,
             registrations: registrationRecords,
             advisees: adviseeList,
             isOverride: isOverrideApplied,
